@@ -26,7 +26,7 @@
 ### 1.3 🟡 `verify_docs.py` 커버리지 85% — 등급 A 기준(90%) 미달
 
 - 증상: `main()` 이 subprocess 로만 실행되어 커버리지에 잡히지 않았고, `strip_comment` 의 따옴표 분기·`Finding.__str__` 의 저장소 밖 경로 분기가 테스트되지 않았다.
-- 조치: 인프로세스 테스트 5건(`TestHelpersAndMain`) 추가 → **97%**. `pyproject.toml` coverage `source` 에 `../scripts` 추가(측정 대상에 넣지 않으면 등급 A 선언이 공허하다), `*/spike/*` 는 omit(등급 C).
+- 조치: 인프로세스 테스트 5건(`TestHelpersAndMain` 4 + `TestCommandLines` 1) 추가 → **97%**. `pyproject.toml` coverage `source` 에 `../scripts` 추가(측정 대상에 넣지 않으면 등급 A 선언이 공허하다), `*/spike/*` 는 omit(등급 C).
 - 재발 방지: 커버리지 측정 대상 목록 == 요구사항 5절 등급 표. 테스트결과서 3.4절 "측정 제외"에 이유를 적는다.
 
 ### 1.4 🟡 Whisper `small` 모델 캐시가 C: 기본 HF 경로에 남아 P2 에서 재다운로드될 상태였다
@@ -64,7 +64,7 @@
 | 3 | `check_env.ps1` → `==> READY` 종료 0 | ✅ | 테스트결과서 5.1절 (WARN 1: 디스크 4.09GB) |
 | 4 | bgutil 스크립트 없으면 FAIL·NOT READY | ✅ | `test_check_env.py::TestThisMachine::test_bgutil_removed_makes_not_ready` |
 | 5 | `verify_docs.py` 종료 0, pytest 포함 | ✅ | 테스트결과서 5.2절 (최종 실행) |
-| 6 | 검사 7종 역테스트 통과 | ✅ | `test_docs.py` 31건 |
+| 6 | 검사 7종 역테스트 통과 | ✅ | `test_docs.py` 33건 |
 | 7 | 프론트 `npm test`·`npm run build` | ✅ | 13 passed, built in 1.50s — 테스트결과서 5.3절 |
 | 8 | `build_registry` available 빈 목록, `get("summary")` 예외 | ✅ | `test_analysis_registry.py::TestBuildRegistry` |
 | 9 | 상태 파일 덮어쓰기 `OutputExistsError`, 예외 시 failed 재전파 | ✅ | `test_run_context.py` |
@@ -88,7 +88,7 @@
 | FR-22~23 (db) | ✅ 5건 | — | OK (거부 대상 없음) |
 | FR-24~25 (analysis) | ✅ 6+7건 | ✅ 중복·비Analyzer·미구현 이름 | OK |
 | FR-26~27 (check_env) | ✅ 25건 + 실행 출력 | ✅ 버전·venv·Node 없음/구버전·스크립트 없음·설정 없음 | OK |
-| FR-28~30 (verify_docs) | ✅ 31건 | ✅ 7종 역테스트 + 오탐 방지 6종 | OK |
+| FR-28~30 (verify_docs) | ✅ 33건 | ✅ 7종 역테스트 + 오탐 방지 6종 | OK |
 | FR-31 (frontend) | ✅ 13건 | ✅ 음수·NaN·Infinity | OK |
 | FR-32~34 (패키징·설정) | ✅ 간접(설치 성공·`_comment`·키 대조) | ✅ | OK — pytest 마커 `-m 'not e2e'` 는 수동 확인(e2e 0건이라 판별 불가, P2 에서 실증) |
 
@@ -106,7 +106,8 @@
 ## 5. 문서 정합성 점검
 
 - 변경 요약(doc-consistency 에 넘긴 문장): 설계서 정정 2건 · ruff 140 · 모델 캐시 이동 · 보류 결정 3 종료 · python-json-logger 제거 · 테스트 실측치 · check_env 무네트워크 · verify_docs 검사 대상 8건.
-- 실행 결과와 메인 재검토는 `docs/internal/설계서_Agents.md` 5절 실행 기록에 적는다(첫 실행 — 메인이 독립 재검토).
+- 실행 결과(2026-09-14, sonnet): 지적 9건 → 반영 7건(기술 스택 표의 python-json-logger, FR-20·22·23 시그니처, 디스크 수치 4곳, 학습가이드 216건), 정당 1건(Architecture 6절 사용 예시 — 선택 인자), 정밀도 조정 1건(4.7GB 표기). 요구사항 기록과의 차이 1건(기획서의 보류 결정 3 트리거 — 프롬프트는 고치지 않음).
+- 메인 독립 재검토에서 **검사원이 놓친 것 2건**: 이 문서 2절·3절의 `test_docs.py` 31건(실측 33), 학습가이드의 "인프로세스 테스트 3개"(실측 5). 규칙(`설계서_Agents` 3절)대로 다음 실행부터 **opus** 로 승격. 상세는 `docs/internal/설계서_Agents.md` 5절.
 
 ## 6. 보류 결정으로 등재할 것
 

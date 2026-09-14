@@ -247,7 +247,7 @@ class AnalyzerRegistry:
 | 프론트 | React + Vite + TypeScript, TanStack Query, Vitest + Testing Library | 3 플랫폼 공유 |
 | 데스크톱(P4) | Tauri v2 + PyInstaller **onedir** 사이드카 + NSIS | 8절 |
 | 모바일(P6) | Capacitor | React 재사용 |
-| 로깅 | 표준 logging + python-json-logger | 한 줄 JSON |
+| 로깅 | 표준 logging + JSON 포매터 직접 구현(외부 패키지 없음) | 한 줄 JSON — P0_설계서_Common 6.2절 |
 | 품질 | pytest, pytest-cov, ruff / vitest | 9절 |
 
 ### 7.1 값을 어디에 두는가 (하드코딩 금지 — 3분류)

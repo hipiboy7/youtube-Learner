@@ -240,7 +240,7 @@ Python·ffmpeg·Node가 없는 **깨끗한 Windows PC**에서 설치파일 하�
 | CPU | Intel Xeon (Icelake) **물리 1 / 논리 2** | STT 워커 1개, `cpu_threads=2`, 기본 모델 small |
 | RAM | 16GB | Whisper small/turbo 모두 여유 |
 | GPU | 없음 | CPU 전용 int8 |
-| 디스크 | **C: 3.96GB / D: 4.72GB 여유** (turbo 캐시 삭제 후) | 모델 캐시 `HF_HOME`을 지정, 대형 모델 동시 보유 불가, **P4 전 디스크 확보 필수**(보류 결정 8) |
+| 디스크 | **C: 4.17GB / D: 4.09GB 여유** (2026-09-14 — turbo 캐시 삭제, small 캐시 464MB 를 D: `data/models` 로 이동 후) | 모델 캐시 `HF_HOME`을 지정, 대형 모델 동시 보유 불가, **P4 전 디스크 확보 필수**(보류 결정 8) |
 | Python | 3.14.3(기본) / **3.12.10(프로젝트)** | `py -3.12 -m venv backend\.venv` |
 | Node | v24.14.0 | yt-dlp JS 런타임, bgutil 스크립트, 프론트 빌드 |
 | 없음 | ffmpeg, Rust/cargo, gh CLI | ffmpeg 불필요 확인; Rust는 P4에서 설치(≈2GB) |

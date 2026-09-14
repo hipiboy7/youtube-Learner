@@ -15,7 +15,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 
 ## 2. 배경 및 제약
 
-- 실행 환경(TechSpike 3.8절): 물리 코어 1 / 논리 2, RAM 16GB, GPU 없음, **디스크 C 3.96GB / D 4.72GB 여유**, Python 3.12.10 venv, Node 24. → 자원 관련 값은 설정으로 빼고 기본값을 작게. 모델 캐시 위치는 우리가 정한다(T-002).
+- 실행 환경(TechSpike 3.8절): 물리 코어 1 / 논리 2, RAM 16GB, GPU 없음, **디스크 C 4.17GB / D 4.09GB 여유**(2026-09-14, 모델 캐시 이동 후), Python 3.12.10 venv, Node 24. → 자원 관련 값은 설정으로 빼고 기본값을 작게. 모델 캐시 위치는 우리가 정한다(T-002).
 - PO 토큰 제공자는 Node 스크립트 빌드가 필요하다(T-001). 환경 검사가 이를 잡아야 한다.
 - 원어 자막 트랙 키는 `<lang>-orig`(TechSpike 3.2절). 상수와 정규화 함수가 필요하다.
 - 문서 규약: 문서의 명령은 PowerShell·`backend\.venv\Scripts\python.exe` 전체 경로(`CLAUDE.md` 4절). 검사기가 Windows 규칙을 알아야 한다.
@@ -127,15 +127,15 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 
 ### 4.7 `workflow/run_context.py` — 실행 기록
 
-**FR-20.** `new_run_id(now=None) -> str`은 `YYYYMMDD-HHMMSS-<8 hex>` 형식이어야 한다(UTC). `run_context(stage: str, settings, logger=None)` 컨텍스트 매니저는 진입 시 `STATUS_DIR/<stage>_<run_id>.json`에 `status="started"`를 쓰고 `(run_id, ContextLoggerAdapter)`를 내준다. 정상 종료 시 `succeeded`·`finished_at`·`duration_s`, 예외 시 `failed`·`error{type,message}`를 기록하고 **예외를 재전파**한다(종료 코드는 CLI가 정한다).
+**FR-20.** `new_run_id(now=None) -> str`은 `YYYYMMDD-HHMMSS-<8 hex>` 형식이어야 한다(UTC). `run_context(stage: str, settings, logger=None, *, run_id=None, extra=None)` 컨텍스트 매니저는(`run_id` 주입은 테스트·재실행용) 진입 시 `STATUS_DIR/<stage>_<run_id>.json`에 `status="started"`를 쓰고 `(run_id, ContextLoggerAdapter)`를 내준다. 정상 종료 시 `succeeded`·`finished_at`·`duration_s`, 예외 시 `failed`·`error{type,message}`를 기록하고 **예외를 재전파**한다(종료 코드는 CLI가 정한다).
 
 **FR-21.** 상태 파일 스키마: `stage, run_id, status, started_at, finished_at, duration_s, error, pipeline_version, extra`. `read_status(path) -> dict`. 같은 `run_id` 파일이 이미 있으면 `OutputExistsError`(덮어쓰기 금지). `stage`는 `[a-z0-9_]+`만 허용.
 
 ### 4.8 `repository/db.py` — SQLite 엔진
 
-**FR-22.** `make_engine(settings) -> Engine`: `sqlite:///{db_path}`, 연결마다 `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`, `synchronous=NORMAL`. `make_session_factory(engine) -> sessionmaker`. `Base = DeclarativeBase`(테이블은 P1이 정의).
+**FR-22.** `make_engine(settings) -> Engine`: `DATA_DIR` 이 없으면 만들고(SQLite 는 부모 디렉토리 없이 파일을 못 만든다), `sqlite:///{db_path}`, 연결마다 `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`, `synchronous=NORMAL`. `make_session_factory(engine) -> sessionmaker`. `Base = DeclarativeBase`(테이블은 P1이 정의).
 
-**FR-23.** `init_db(engine)`은 `Base.metadata.create_all`을 수행하고 PRAGMA가 적용됐는지 확인해 `dict(journal_mode=..., foreign_keys=...)`를 반환한다. 파일 DB에서 `journal_mode == "wal"`, `foreign_keys == 1`이어야 한다. `DATA_DIR`이 없으면 만든다(FR-3 위임).
+**FR-23.** `init_db(engine)`은 `Base.metadata.create_all`을 수행하고 PRAGMA가 적용됐는지 확인해 `dict(journal_mode=..., foreign_keys=...)`를 반환한다. 파일 DB에서 `journal_mode == "wal"`, `foreign_keys == 1`이어야 한다. (디렉토리 생성은 FR-22 `make_engine` — 초안은 여기에 적었으나 SelfReview 1.1 로 정정)
 
 ### 4.9 `analysis/` — 분석 슬롯
 
@@ -248,7 +248,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 |---|---|---|---|
 | 1 | `.env` 키를 P0에 전부 확정했는데 P1~P2에서 이름이 바뀐다 | 키는 **추가만** 허용, 변경 시 정정 이력 + `.env.example`·Settings 대조 테스트가 잡는다 | 매 Phase |
 | 2 | `verify_docs`의 Windows 규칙 오탐(백슬래시·드라이브 문자·PowerShell 변수 `$env:`) | 역테스트에 오탐 케이스 포함, 위반 발견 시 규칙 좁히고 테스트 추가 | P0 테스트 |
-| 3 | 프론트 스캐폴드 의존성(node_modules ≈ 200MB)이 디스크를 압박 | D: 4.7GB 여유 확인 후 설치. `node_modules`는 git 미추적 | P0 |
+| 3 | 프론트 스캐폴드 의존성(node_modules)이 디스크를 압박 | 여유 확인 후 설치(실측 155 패키지 102MB). `node_modules`는 git 미추적 | P0 |
 | 4 | `check_env`가 네트워크 호출 없이 판정하므로 YouTube 차단 상태는 못 본다 | 의도된 범위. 차단 감지는 P2 실패 카운트 | P2 |
 | 5 | pydantic `frozen` 모델과 SQLAlchemy ORM 사이 변환 비용 | P1에서 ORM ↔ 도메인 변환 함수를 저장소 계층에 둔다 | P1 |
 

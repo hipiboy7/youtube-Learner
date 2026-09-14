@@ -56,7 +56,7 @@
    | 5 | **P5(분석) vs P6(모바일) 순서** | Phase 4 종료 | 사용자 결정 기록 (`docs/internal/qa/`) | `docs/scope-definition.md` 7절 |
    | 6 | **서버 배포(Docker) 여부** — 데스크톱 우선 | Phase 6 착수 | 모바일이 LAN 밖 접속을 요구하는가 | `docs/설계서_Architecture.md` 8.3절 |
    | 7 | **YouTube Data API 키 병행** | yt-dlp 목록 경로 차단 발생 시 | `VideoListSource` 구현체가 2개인가 | `docs/scope-definition.md` 3.6절 |
-   | 8 | **디스크 확보** — C 3.96GB / D 4.72GB 여유(2026-09-14). P4의 Rust 툴체인(≈2GB)·PyInstaller 산출물·NSIS 빌드가 들어갈 자리가 없다. 증설 또는 정리(`data/audio` 캐시·HF 캐시·불필요 파일)를 P4 전에 한다 | Phase 4 착수 | `check_env`의 디스크 여유 항목이 경고 없이 통과(기준값은 P4 프롬프트에서 정함, 임시 10GB) | `docs/scope-definition.md` 8.1절 |
+   | 8 | **디스크 확보** — C 4.17GB / D 4.09GB 여유(2026-09-14, small 캐시를 D: 로 이동 후). P4의 Rust 툴체인(≈2GB)·PyInstaller 산출물·NSIS 빌드가 들어갈 자리가 없다. 증설 또는 정리(`data/audio` 캐시·HF 캐시·불필요 파일)를 P4 전에 한다 | Phase 4 착수 | `check_env`의 디스크 여유 항목이 경고 없이 통과(기준값은 P4 프롬프트에서 정함, 임시 10GB) | `docs/scope-definition.md` 8.1절 |
 
    **결정을 문서 각주로만 남기지 않는다.** 보류하는 순간 (a) 트리거, (b) 기계로 판정하는 방법, (c) 돌아갈 이정표 문서를 이 표에 함께 등재한다. 기억에 의존하면 돌아오지 못한다.
 
