@@ -1,0 +1,51 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+backend/.venv/
+.venv/
+backend/build/
+backend/dist/
+*.spec.bak
+
+# ── Node / frontend ──
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# ── Tauri / Capacitor ──
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/ios/App/Pods/
+
+# ── 런타임 상태·산출물 (CLAUDE.md: 커밋하지 않는다) ──
+.env
+data/
+status/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.m4a
+*.webm
+*.opus
+*.wav
+*.mp3
+models/
+
+# ── OS / IDE ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
