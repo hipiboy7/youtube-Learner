@@ -3,7 +3,7 @@
 - 상위 문서: `docs/P0_요구사항정의서_Common.md` (초안 2026-09-14) 7절, `docs/P0_설계서_Common.md` (초안 2026-09-14)
 - 규칙: `CLAUDE.md` 4절 4단계 산출물. 다음은 `docs/internal/P0_검토서_SelfReview.md` (1절 6단계)
 - 실행일: 2026-09-14 / 작성 LLM: Fable 5.1 / 브랜치: `impl-phase0`
-- 결과: **전 항목 통과 (PASS)** — 백엔드 226건, 프론트 13건, 환경 검사 READY, 문서 검사 위반 0
+- 결과: **전 항목 통과 (PASS)** — 백엔드 228건, 프론트 13건, 환경 검사 READY, 문서 검사 위반 0 (Direct 리뷰 반영 후 재검증 6.8절)
 
 > 숫자는 전부 실측이다. 커버리지 표는 `pytest --cov` 출력을 옮겼고, 명령 출력은 그대로 복사했다.
 
@@ -12,7 +12,7 @@
 | 항목 | 값 |
 |---|---|
 | OS | Windows Server 2022 Standard (10.0.20348) |
-| CPU / RAM / 디스크 여유 | Intel Xeon (Icelake) 물리 1 / 논리 2, 16GB, C: 4.17GB · D: 4.09GB (모델 캐시 464MB 이동 후) |
+| CPU / RAM / 디스크 여유 | Intel Xeon (Icelake) 물리 1 / 논리 2, 16GB, C: 4.78GB · D: 3.90GB (도구·모델 캐시·pip/npm 캐시를 D: 로 모으고 C: 캐시를 지운 뒤 — D: 우선 규칙) |
 | Python | 3.12.10 (`backend\.venv\Scripts\python.exe`) |
 | Node / npm | v24.14.0 / 11.9.0 |
 | 테스트 도구 | pytest 8.4.2, pytest-cov 7.1.0, ruff 0.16.7 / vitest 3.2.7, @vitest/coverage-v8 |
@@ -23,11 +23,11 @@
 
 | 구분 | 테스트 수 | 결과 |
 |---|---|---|
-| 등급 A (`backend/tests/unit/`) — constants 34 · exceptions 15 · domain_models 45 · interfaces 5 · run_context 15 · null_analyzer 6 | 120 | PASS |
-| 등급 B (`backend/tests/integration/`) — config 27 · logging 9 · db 5 · analysis_registry 7 · check_env 25 · docs 33 | 106 | PASS |
+| 등급 A (`backend/tests/unit/`) — constants 35 · exceptions 15 · domain_models 45 · interfaces 5 · run_context 15 · null_analyzer 6 | 121 | PASS |
+| 등급 B (`backend/tests/integration/`) — config 28 · logging 9 · db 5 · analysis_registry 7 · check_env 25 · docs 33 | 107 | PASS |
 | 프론트 (`frontend/`, vitest) — time 9 · api 3 · App 1 | 13 | PASS |
 | E2E (`backend/tests/e2e/`, `-m e2e`) | 0 | 해당 없음 — P0 는 실호출 코드가 없다 |
-| **합계 (기본 pytest)** | **226** | **PASS** |
+| **합계 (기본 pytest)** | **228** | **PASS** |
 
 ## 3. 등급별 커버리지
 
@@ -37,12 +37,12 @@
 
 | 모듈 | Stmts | Miss | Branch | BrPart | Cover |
 |---|---|---|---|---|---|
-| `constants.py` | 45 | 0 | 8 | 0 | 100% |
+| `constants.py` | 47 | 0 | 8 | 0 | 100% |
 | `domain/models.py` | 122 | 0 | 22 | 0 | 100% |
 | `workflow/run_context.py` | 55 | 0 | 2 | 0 | 100% |
 | `analysis/null_analyzer.py` | 14 | 0 | 0 | 0 | 100% |
 | `scripts/verify_docs.py` (검사 함수 + main) | 275 | 6 | 138 | 7 | 97% |
-| **소계** | **511** | **6** | | | **98.8%** (문 기준) → 목표 대비 +8.8%p |
+| **소계** | **513** | **6** | | | **98.8%** (문 기준) → 목표 대비 +8.8%p |
 
 `verify_docs.py` 미커버 6문: venv python 부재 분기(223-224), `--path` 로 없는 파일 이외의 드문 분기(250·269·302·424). 이 VM 에서는 재현할 수 없는 환경 분기다.
 
@@ -51,17 +51,17 @@
 | 모듈 | Stmts | Miss | Branch | BrPart | Cover |
 |---|---|---|---|---|---|
 | `cli/check_env.py` | 151 | 11 | 28 | 1 | 93% |
-| `config.py` | 84 | 3 | 14 | 1 | 96% |
+| `config.py` | 89 | 3 | 14 | 1 | 96% |
 | `logging_config.py` | 49 | 1 | 8 | 2 | 95% |
 | `analysis/registry.py` | 30 | 0 | 6 | 0 | 100% |
 | `repository/db.py` | 25 | 0 | 0 | 0 | 100% |
-| **소계** | **339** | **15** | | | **95.6%** (문 기준) → 목표 대비 +25.6%p |
+| **소계** | **344** | **15** | | | **95.6%** (문 기준) → 목표 대비 +25.6%p |
 
-`check_env.py` 미커버: 필수 모듈 import 실패 분기(82-83), 디렉토리 쓰기 실패(132-133), 디스크 OSError(150-151), `.env` ValidationError 진입(216-219), `__main__`(226). `config.py`: PyInstaller frozen 분기(36), `ensure_dirs` OSError(104-105) — P4 에서 실증.
+`check_env.py` 미커버: 필수 모듈 import 실패 분기(82-83), 디렉토리 쓰기 실패(132-133), 디스크 OSError(150-151), `.env` ValidationError 진입(216-219), `__main__`(226). `config.py`: PyInstaller frozen 분기(36), `ensure_dirs` OSError(115-116) — P4 에서 실증.
 
 ### 3.3 A+B 가중 평균 — 목표 ≥ 80%
 
-**97.5%** = (511 − 6 + 339 − 15) / (511 + 339). 도구가 보고한 TOTAL(`__init__` 포함, 872문)은 **97%**.
+**97.5%** = (513 − 6 + 344 − 15) / (513 + 344). 도구가 보고한 TOTAL(`__init__` 포함, 879문)은 **97%**.
 
 프론트(`frontend/src/lib/`): `time.ts`·`api.ts` Stmts/Branch/Funcs/Lines **100%** (vitest v8).
 
@@ -77,13 +77,13 @@
 
 | FR | 내용(요약) | 검증 방법 | 결과 |
 |---|---|---|---|
-| FR-1 | Settings 키 확정·기본값 | `test_config.py::TestDefaults`, `TestDotEnv` | PASS |
+| FR-1 | Settings 키 확정·기본값 (bgutil 기본 경로는 저장소 `tools/`, D: 우선) | `test_config.py::TestDefaults` (`test_bgutil_default_lives_under_project_tools_on_project_drive` 포함), `TestDotEnv` | PASS |
 | FR-2 | 파생 경로 절대화 | `TestDefaults::test_paths_are_absolute_and_tilde_expanded`, `test_derived_paths`, `test_hf_home_override` | PASS |
 | FR-3 | `ensure_dirs`·`apply_process_env` 명시 호출 | `TestSideEffects` (3건 — 생성자 무부작용 포함) | PASS |
 | FR-4 | 잘못된 값 로딩 시 거부 | `TestRejects::test_invalid_values` ×6 | PASS |
 | FR-5 | `_comment` 필수 JSON 로더 | `TestJsonConfig` (실파일 3종 + 거부 4종) | PASS |
 | FR-6 | StrEnum 4종 값 집합 | `test_constants.py::TestEnums` ×6 | PASS |
-| FR-7 | 고정 상수·패턴 | `TestFixedValues` ×12 | PASS |
+| FR-7 | 고정 상수·패턴 (+`MANUAL_ANALYZER_NAME/VERSION`, v2) | `TestFixedValues` ×13 | PASS |
 | FR-8 | `split_caption_key`·역함수 | `TestCaptionKey` ×10 | PASS |
 | FR-9 | frozen·extra=forbid | `test_domain_models.py::TestVideoStub::test_rejects_unknown_field`, `test_frozen`, `test_model_copy_update_produces_new_object` | PASS |
 | FR-10 | `ChannelRef` 식별자 규칙 | `TestChannelRef` ×8 | PASS |
@@ -130,9 +130,9 @@
 [OK] import sqlalchemy — SQLAlchemy 2.0.52
 [OK] import pydantic_settings — pydantic-settings 2.15.0
 [OK] node — v24.14.0 (C:\Program Files\nodejs\node.EXE)
-[OK] bgutil script — C:\Users\SYSADMIN\bgutil-ytdlp-pot-provider\server\build\generate_once.js
+[OK] bgutil script — D:\claude\youtubeLearner\tools\bgutil-ytdlp-pot-provider\server\build\generate_once.js
 [OK] dirs — DATA_DIR=D:\claude\youtubeLearner\data STATUS_DIR=D:\claude\youtubeLearner\status HF_HOME=D:\claude\youtubeLearner\data\models
-[WARN] disk — 4.09 GB 여유 (D:\) — 기준 10 GB 미달. 모델 캐시·P4 빌드 공간 확보 필요 (보류 결정 8)
+[WARN] disk — 3.90 GB 여유 (D:\) — 기준 10 GB 미달. 모델 캐시·P4 빌드 공간 확보 필요 (보류 결정 8)
 [OK] config stt_default — 8 keys
 [OK] config ytdlp_default — 9 keys
 [OK] config sync_default — 5 keys
@@ -141,7 +141,7 @@
 exit=0
 ```
 
-확인 일자 2026-09-14. 첫 실행에서는 모델 캐시가 `[WARN]`(없음)이었고, 스파이크가 C: 기본 캐시에 내려받은 `small` 을 `data/models/hub/` 로 옮긴 뒤 `[OK]` 가 됐다(6.4절). 디스크 WARN 은 보류 결정 8.
+확인 일자 2026-09-14 — 위 출력은 Direct 리뷰 반영(bgutil 을 홈 C: → 저장소 `tools/` D: 로 이동, C: 캐시 정리) **후의 재실행**이다. 첫 실행에서는 bgutil 경로가 `C:\Users\…\bgutil-ytdlp-pot-provider\…` 였고 모델 캐시가 `[WARN]`(없음)이었다; 스파이크가 C: 기본 캐시에 내려받은 `small` 을 `data/models/hub/` 로 옮긴 뒤 `[OK]` 가 됐다(6.4절). 디스크 WARN 은 보류 결정 8(부족 시 D: 증설 — 사용자 결정).
 
 거부 케이스(bgutil 스크립트 경로를 없는 곳으로): `test_check_env.py::TestThisMachine::test_bgutil_removed_makes_not_ready` — 마지막 줄 `==> NOT READY (1 failures)`, 종료 1.
 
@@ -248,8 +248,8 @@ TechSpike 는 `HF_HOME` 미설정으로 실행돼 464MB 가 `C:\Users\…\.cache
 ```
 == pytest --cov ==
 D:\claude\youtubeLearner\scripts\verify_docs.py     275      6    138      7    97%   223-224, 250, 269, 293->301, 302, 406->400, 424
-TOTAL                                               872     21    226     11    97%
-226 passed in 4.82s
+TOTAL                                               879     21    226     11    97%
+228 passed in 6.14s
 
 == ruff check src tests ..\scripts\verify_docs.py ==
 All checks passed!
@@ -265,6 +265,10 @@ Tests 13 passed (13) / ✓ built in 1.50s
 ```
 
 주의 — 저장소 루트에서 `pytest --rootdir backend backend\tests --cov` 로 돌리면 테스트 결과는 같지만 coverage `source` 의 `../scripts` 가 CWD 기준으로 어긋나 TOTAL 이 1835문(98%)으로 부풀어 보인다. 커버리지는 `backend` 에서 측정한 값만 인정한다.
+
+### 6.8 Direct 리뷰 반영 후 재검증 (2026-09-14)
+
+사용자 지시 3건(디스크 D: 우선·증설, 수동 요약 흐름) 반영 — `docs/internal/P0_검토서_SelfReview.md` 9절. 코드 변경: `constants.MANUAL_ANALYZER_NAME/VERSION` + 테스트 1건, `Settings.bgutil_script_path` 기본값 `project_root()/tools/…` + 테스트 1건 → **228 passed**, TOTAL 879문 97%, ruff 통과, `check_env` READY(5.1절 재실행 출력), `verify_docs` 문서 21개 위반 0. 이 절의 수치가 최종이다.
 
 ## 7. 완료 기준 대조 (요구사항정의서 7절)
 
@@ -306,5 +310,5 @@ backend\.venv\Scripts\python.exe scripts\verify_docs.py
 Push-Location frontend; npm test; npm run build; Pop-Location
 ```
 
-기대값: READY(종료 0) / 226 passed, TOTAL 97% / All checks passed / 문서 21개 — 위반 없음(종료 0) / 13 passed, built. 소요 약 2분(프론트 빌드 포함).
+기대값: READY(종료 0) / 228 passed, TOTAL 97% / All checks passed / 문서 21개 — 위반 없음(종료 0) / 13 passed, built. 소요 약 2분(프론트 빌드 포함).
 pytest 는 **`backend` 디렉토리에서** 실행한다 — coverage `source` 의 `../scripts` 가 그 디렉토리 기준이다(6.7절).

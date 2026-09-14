@@ -75,6 +75,11 @@ class TestFixedValues:
     def test_package_name(self):
         assert c.PACKAGE_NAME == "youtube_learner"
 
+    def test_manual_analysis_identity(self):
+        """scope 2.4절 v1 수동 흐름 — 붙여 넣은 요약은 analyzer_name 'manual' / version 'user' 로 저장된다. null 과 겹치지 않는다."""
+        assert c.MANUAL_ANALYZER_NAME == "manual" and c.MANUAL_ANALYZER_VERSION == "user"
+        assert c.MANUAL_ANALYZER_NAME != "null"
+
 
 class TestCaptionKey:
     @pytest.mark.parametrize(

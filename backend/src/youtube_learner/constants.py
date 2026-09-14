@@ -56,6 +56,9 @@ YT_VIDEO_ID_PATTERN: Final[str] = r"^[A-Za-z0-9_-]{11}$"
 YT_CHANNEL_ID_PATTERN: Final[str] = r"^UC[A-Za-z0-9_-]{22}$"
 STAGE_NAME_PATTERN: Final[str] = r"^[a-z0-9_]+$"
 PACKAGE_NAME: Final[str] = "youtube_learner"
+#: 사용자가 외부 AI 챗에서 받아 붙여 넣은 요약·정리의 analyses.analyzer_name / analyzer_version (scope-definition 2.4절, v1 수동 흐름)
+MANUAL_ANALYZER_NAME: Final[str] = "manual"
+MANUAL_ANALYZER_VERSION: Final[str] = "user"
 
 
 def split_caption_key(key: str) -> tuple[str, bool]:

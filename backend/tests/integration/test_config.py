@@ -33,6 +33,15 @@ class TestDefaults:
         assert "~" not in str(tmp_settings.bgutil_script_path)
         assert tmp_settings.bgutil_script_path.is_absolute()
 
+    def test_bgutil_default_lives_under_project_tools_on_project_drive(self, tmp_settings: Settings):
+        """디스크 D: 우선 규칙(CLAUDE.md 7절) — 기본 위치는 홈 디렉토리(C:)가 아니라 저장소 안 tools/ 다."""
+        expected = (
+            resource_root().parent / "tools" / "bgutil-ytdlp-pot-provider" / "server" / "build" / "generate_once.js"
+        ).resolve()
+        assert tmp_settings.bgutil_script_path == expected
+        assert tmp_settings.bgutil_script_path.drive == resource_root().drive
+        assert Path.home() not in tmp_settings.bgutil_script_path.parents
+
     def test_derived_paths(self, tmp_settings: Settings):
         assert tmp_settings.db_path == tmp_settings.data_dir / "youtube_learner.db"
         assert tmp_settings.channels_dir == tmp_settings.data_dir / "channels"

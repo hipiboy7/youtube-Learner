@@ -100,7 +100,7 @@
 | 2 | `check_env` 가 YouTube 차단 상태를 못 본다 | 의도된 범위(READY 가 외부 상태에 흔들리지 않게) | P2 | 작업 실패 카운트(P2 설계) |
 | 3 | `Settings` 가 `.env` 를 **현재 디렉토리**에서 읽는다 — 데스크톱 앱(P4)은 실행 디렉토리가 다르다 | 사이드카 실행 방식이 P4 에서 정해진다 | P4 | P4 TechSpike: 사이드카 CWD 확인, 필요 시 `env_file` 을 `resource_root()` 기준으로 |
 | 4 | pydantic frozen 모델 ↔ SQLAlchemy ORM 변환 비용·중복 정의 | 첫 테이블이 P1 | P1 | P1 설계서에 변환 함수 위치 명시 |
-| 5 | 디스크 여유 C 4.17 / D 4.09GB — P1·P2 오디오 캐시·모델 프리셋이 들어갈 자리가 없다 | 증설은 사용자 결정 | P2 벤치마크(모델 2개 이상 보유 시) | `check_env` disk WARN, 보류 결정 8 |
+| 5 | 디스크 여유 C 4.78 / D 3.90GB — P1·P2 오디오 캐시·모델 프리셋이 들어갈 자리가 없다 | **사용자 결정(2026-09-14): 부족하면 D: 증설** — 시점은 P4 전, 조기 트리거는 P2 모델 2개 보유 | P2 벤치마크 | `check_env` disk WARN, 보류 결정 8 |
 | 6 | docstring 첫 줄 규약(대응 절·FR·등급)을 사람이 대조했다 | 기계 검사 규칙(정규식)이 아직 없다 | P1 부터 파일이 늘 때 | P1 보류 후보: `verify_docs` 에 docstring 검사 추가 |
 
 ## 5. 문서 정합성 점검
@@ -139,7 +139,17 @@
 | 환경 제약 명시·디스크 보류 결정 | scope 8.1절, CLAUDE 0절·보류 8, `check_env` disk | ✅ |
 | 롱/숏 = 탭 소속 | `VideoKind` 주석, CLAUDE 보류 3 종료 | ✅ |
 
-## 9. 결론
+## 9. Direct 리뷰 반영 (2026-09-14, 병합 전)
+
+| # | 사용자 지시·결정 | 반영 |
+|---|---|---|
+| 1 | "로컬 디스크를 사용할 때는 항상 D 드라이브를 우선" | `CLAUDE.md` 7절 규칙. bgutil 을 홈(C:)→저장소 `tools/`(D:, git 미추적), `Settings.bgutil_script_path` 기본 `project_root()/tools/…`(+테스트), `.env.example`·README·Architecture 3.2·요구사항 FR-1·설계서 3.1/3.2 정정, pip/npm 캐시 `D:\claude\.cache\`, C: 캐시(pip 116MB·npm 321MB·HF) 삭제 → C 4.78GB |
+| 2 | "디스크가 필요하면 D 드라이브를 증설" | 보류 결정 8 판정 재료로 기록(scope 8.1, `CLAUDE.md` 1절). 정리 대상은 `data/audio` 캐시만 남음 |
+| 3 | "스크립트 원클릭 복사 + 외부 AI 요약을 붙여 넣는 '요약 및 정리' 메뉴와 저장" | scope **v2**(1·2.3·2.4·2.5·6·7·9절), `CLAUDE.md` 0절, Architecture 4절 흐름·5.2절, `constants.MANUAL_ANALYZER_NAME/VERSION`(+테스트), 요구사항 FR-7·설계서 1.1/9.2, 용어집·학습가이드. 구현은 P3(화면·API), 스키마는 P1 |
+
+원문·문답은 `docs/prompts/phase0/scope-and-common-modules-v2.md`, `docs/internal/qa/P0_질의응답_디스크와수동요약.md`. 반영 후 `doc-consistency` 2회차(opus)를 돌린다 — `설계서_Agents` 5절.
+
+## 10. 결론
 
 Phase 0 의 완료 기준 13항은 전부 기계 판정으로 충족했고, 점검에서 나온 결함 8건은 모두 수정했다. Direct 리뷰에서 먼저 봐야 할 것 두 가지:
 1. **`CLAUDE.md` 8절 YouTube 연동 규칙과 보류 결정 8건** — 이후 모든 Phase 가 이 규칙을 전제한다. 실측 근거(TechSpike)가 충분한지, 트리거가 기계로 판정 가능한지.

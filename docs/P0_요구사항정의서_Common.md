@@ -15,7 +15,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 
 ## 2. 배경 및 제약
 
-- 실행 환경(TechSpike 3.8절): 물리 코어 1 / 논리 2, RAM 16GB, GPU 없음, **디스크 C 4.17GB / D 4.09GB 여유**(2026-09-14, 모델 캐시 이동 후), Python 3.12.10 venv, Node 24. → 자원 관련 값은 설정으로 빼고 기본값을 작게. 모델 캐시 위치는 우리가 정한다(T-002).
+- 실행 환경(TechSpike 3.8절): 물리 코어 1 / 논리 2, RAM 16GB, GPU 없음, **디스크 C 4.78GB / D 3.90GB 여유**(2026-09-14, C: 캐시 정리·D: 이동 후), Python 3.12.10 venv, Node 24. → 자원 관련 값은 설정으로 빼고 기본값을 작게. 모델 캐시 위치는 우리가 정한다(T-002).
 - PO 토큰 제공자는 Node 스크립트 빌드가 필요하다(T-001). 환경 검사가 이를 잡아야 한다.
 - 원어 자막 트랙 키는 `<lang>-orig`(TechSpike 3.2절). 상수와 정규화 함수가 필요하다.
 - 문서 규약: 문서의 명령은 PowerShell·`backend\.venv\Scripts\python.exe` 전체 경로(`CLAUDE.md` 4절). 검사기가 Windows 규칙을 알아야 한다.
@@ -68,7 +68,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 | `API_HOST` / `API_PORT` | `127.0.0.1` / `8765` | P1 API 서버 | 8000 충돌 회피 |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | P3 프론트 dev, P6 모바일 | `설계서_Architecture` 8.3절 |
 | `YTDLP_JS_RUNTIME` | `node` | yt-dlp JS 런타임 | TechSpike 3.3절 |
-| `BGUTIL_SCRIPT_PATH` | `~/bgutil-ytdlp-pot-provider/server/build/generate_once.js` | PO 토큰 스크립트 | T-001 |
+| `BGUTIL_SCRIPT_PATH` | `<저장소>/tools/bgutil-ytdlp-pot-provider/server/build/generate_once.js` (D:, git 미추적; 초안의 `~/…` 는 디스크 D: 우선 규칙으로 정정) | PO 토큰 스크립트 | T-001, `CLAUDE.md` 7절 |
 | `BGUTIL_HTTP_ENABLED` | `false` | HTTP 제공자 사용 여부 | TechSpike 3.3절 경고 반복 |
 | `STT_CPU_THREADS` | 논리 코어 수 | faster-whisper `cpu_threads` | TechSpike 3.5절 |
 | `ANALYZERS` | (빈 목록) | 켤 분석기 이름 목록 (P5) | scope 2.4절 |
@@ -91,7 +91,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 | `VideoKind` 3값 | scope 2.2절 (live는 예약) |
 | `TranscriptSource` 4값 | scope 2.3절·5.2절 (translated는 옵션) |
 
-**FR-7.** 상수: `ORIGINAL_CAPTION_SUFFIX = "-orig"`, `LANG_PRIORITY_DEFAULT = ("ko",)`, `PIPELINE_VERSION = "1"`, `DB_FILENAME = "youtube_learner.db"`, `STATUS_FILENAME_PATTERN = "{stage}_{run_id}.json"`, `YT_VIDEO_ID_PATTERN = r"^[A-Za-z0-9_-]{11}$"`, `YT_CHANNEL_ID_PATTERN = r"^UC[A-Za-z0-9_-]{22}$"`, `PACKAGE_NAME = "youtube_learner"`.
+**FR-7.** 상수: `ORIGINAL_CAPTION_SUFFIX = "-orig"`, `LANG_PRIORITY_DEFAULT = ("ko",)`, `PIPELINE_VERSION = "1"`, `DB_FILENAME = "youtube_learner.db"`, `STATUS_FILENAME_PATTERN = "{stage}_{run_id}.json"`, `YT_VIDEO_ID_PATTERN = r"^[A-Za-z0-9_-]{11}$"`, `YT_CHANNEL_ID_PATTERN = r"^UC[A-Za-z0-9_-]{22}$"`, `PACKAGE_NAME = "youtube_learner"`, `MANUAL_ANALYZER_NAME = "manual"`, `MANUAL_ANALYZER_VERSION = "user"`(v2 — 사용자가 붙여 넣은 요약·정리의 `analyses` 출처, scope 2.4절).
 
 **FR-8.** 순수 함수 `split_caption_key(key) -> (language, is_original)`: `"ko-orig"` → `("ko", True)`, `"ko"` → `("ko", False)`, `"pt-BR"` → `("pt-BR", False)`; 빈 문자열은 `ValueError`. 역함수 `original_caption_key(lang) -> f"{lang}-orig"`.
 

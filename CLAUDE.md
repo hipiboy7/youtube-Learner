@@ -12,13 +12,13 @@
 
 - **목적**: 사용자가 고른 유튜브 채널의 **롱폼·숏폼 영상 목록**과 각 영상의 **전체 스크립트**(세그먼트+타임스탬프)를 확보해 학습에 쓴다.
 - **스크립트 소스 우선순위**: 수동 자막(`manual`) → 원어 자동 자막(`auto`, yt-dlp 트랙 키 `<lang>-orig`) → 로컬 faster-whisper(`whisper`, CPU). 번역 자막은 기본 꺼짐 — **다른 언어를 요청하면 HTTP 429**가 난다(실측 2026-09-14).
-- **요약·핵심 도출은 v1에 없다.** `Analyzer` Protocol·레지스트리(`NullAnalyzer`)·`analyses` 테이블·API 501·화면 "분석" 탭 **자리만** 만든다. 구현은 Phase 5.
+- **자동 요약·핵심 도출은 v1에 없다.** `Analyzer` Protocol·레지스트리(`NullAnalyzer`)·자동 분석 API 501·화면 **자리만** 만든다(구현은 Phase 5). **수동 흐름은 v1 이다**(사용자 결정 2026-09-14): 스크립트 **원클릭 복사** → 사용자가 외부 AI 챗에서 요약 → **'요약 및 정리' 메뉴에 붙여 넣어 저장**(`analyses`, `analyzer_name="manual"`) — Phase 3.
 - **롱/숏 판정은 탭 소속**(`/videos` vs `/shorts`)이다. 길이로 판정하지 않는다(롱폼 탭에 42초 영상 실재).
 - **스택**: Python 3.12 (`backend\.venv`), FastAPI, SQLite(WAL)+SQLAlchemy, Huey(SQLite), yt-dlp[default]+bgutil PO 토큰 제공자(Node), faster-whisper int8, React+Vite+TS → Tauri(P4) → Capacitor(P6).
 - **개발 환경(실측)**: Windows Server 2022, **물리 코어 1/논리 2**, RAM 16GB, GPU 없음, 디스크 여유 C·D 각 **5GB 미만**, Node 24, ffmpeg·Rust·gh 없음, 사내 고정 IP(프록시 없음). → STT 워커 1개·기본 모델 `small`, 모델 캐시는 `HF_HOME`으로 지정, **Phase 4 전 디스크 확보**(보류 결정 8).
 - **핵심 상수**(`constants.py`): `VideoKind = long|short|live`, `TranscriptSource = manual|auto|whisper`(+옵션 `translated`), `ORIGINAL_CAPTION_SUFFIX = "-orig"`, `LANG_PRIORITY_DEFAULT = ["ko"]`, `PIPELINE_VERSION`, DB 파일 `youtube_learner.db`.
 - **자연키**: `yt_channel_id`(UC…), `yt_video_id`. 스크립트 유일성은 (video, source, language, model_name, pipeline_version).
-- **외부 서비스 3종**: YouTube(yt-dlp 경유) / bgutil PO 토큰 제공자(`~/bgutil-ytdlp-pot-provider/server/build/generate_once.js`, Node ≥ 20) / Hugging Face Hub(모델 1회 다운로드). YouTube Data API·클라우드 STT/LLM은 쓰지 않는다.
+- **외부 서비스 3종**: YouTube(yt-dlp 경유) / bgutil PO 토큰 제공자(저장소 안 `tools/bgutil-ytdlp-pot-provider/server/build/generate_once.js` — git 미추적, Node ≥ 20) / Hugging Face Hub(모델 1회 다운로드). YouTube Data API·클라우드 STT/LLM은 쓰지 않는다.
 
 ## 1. Phase 진행 절차 (반복 사이클)
 
@@ -56,7 +56,7 @@
    | 5 | **P5(분석) vs P6(모바일) 순서** | Phase 4 종료 | 사용자 결정 기록 (`docs/internal/qa/`) | `docs/scope-definition.md` 7절 |
    | 6 | **서버 배포(Docker) 여부** — 데스크톱 우선 | Phase 6 착수 | 모바일이 LAN 밖 접속을 요구하는가 | `docs/설계서_Architecture.md` 8.3절 |
    | 7 | **YouTube Data API 키 병행** | yt-dlp 목록 경로 차단 발생 시 | `VideoListSource` 구현체가 2개인가 | `docs/scope-definition.md` 3.6절 |
-   | 8 | **디스크 확보** — C 4.17GB / D 4.09GB 여유(2026-09-14, small 캐시를 D: 로 이동 후). P4의 Rust 툴체인(≈2GB)·PyInstaller 산출물·NSIS 빌드가 들어갈 자리가 없다. 증설 또는 정리(`data/audio` 캐시·HF 캐시·불필요 파일)를 P4 전에 한다 | Phase 4 착수 | `check_env`의 디스크 여유 항목이 경고 없이 통과(기준값은 P4 프롬프트에서 정함, 임시 10GB) | `docs/scope-definition.md` 8.1절 |
+   | 8 | **디스크 확보** — C 4.78GB / D 3.90GB 여유(2026-09-14, 도구·캐시를 D: 로 모으고 C: 캐시를 지운 뒤). P4의 Rust 툴체인(≈2GB)·PyInstaller 산출물·NSIS 빌드가 들어갈 자리가 없다. **부족하면 D: 를 증설한다 — 사용자 결정(2026-09-14)**. 정리 대상은 `data/audio` 캐시만 남았다 | Phase 4 착수 (P2 벤치마크에서 모델 2개 이상 보유 시 조기 트리거) | `check_env`의 디스크 여유 항목이 경고 없이 통과(기준값은 P4 프롬프트에서 정함, 임시 10GB) | `docs/scope-definition.md` 8.1절 |
 
    **결정을 문서 각주로만 남기지 않는다.** 보류하는 순간 (a) 트리거, (b) 기계로 판정하는 방법, (c) 돌아갈 이정표 문서를 이 표에 함께 등재한다. 기억에 의존하면 돌아오지 못한다.
 
@@ -219,6 +219,8 @@
 - Docker는 서버 배포용 **선택지**(보류 결정 6). 이미지를 만들 때는 `.env`로 설정 주입, 호스트 경로 하드코딩 금지, `DATA_DIR` 볼륨.
 - 의존성은 `backend/pyproject.toml`에 **하한·상한 고정**. yt-dlp는 YouTube 변경이 잦아 예외적으로 **설정에서 갱신 가능**하게 둔다(8절).
 - **자원 제약**: 개발 VM은 코어 1·디스크 5GB 미만. 메모리·디스크 영향이 큰 값(모델·오디오 캐시·동시 작업 수)은 설정으로 빼고 기본값을 작게 잡는다.
+- **로컬 디스크는 D: 우선** (사용자 규칙 2026-09-14). 저장소·venv·`node_modules`·`DATA_DIR`(DB·파일·모델 캐시)·도구(`tools/`)·pip/npm 캐시(`D:\claude\.cache\`)를 **D:** 에 둔다. C: 는 OS 와 시스템 도구 전용이다.
+  새로 캐시·임시 파일·다운로드를 만드는 도구를 도입할 때는 **저장 위치를 먼저 D: 로 지정한 뒤 실행**한다 — HF 캐시가 C: 로 가서 여유가 2.4GB 까지 떨어진 T-002 가 그 사례다. `~`(홈 디렉토리) 기준 기본 경로를 코드·문서에 쓰지 않는다.
 - **이식성**: 개발 Windows Server / 사용자 Windows 10·11 / (P6) 서버는 Linux 가능. OS 패키지 직접 의존을 피한다(ffmpeg 바이너리 미동봉이 그 예).
 
 ## 8. YouTube 연동 규칙

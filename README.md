@@ -12,6 +12,10 @@
 
 ## 개발 환경 준비 (Windows · PowerShell)
 
+### 디스크는 D: 우선
+
+이 프로젝트의 로컬 파일은 전부 **D:** 에 둔다 — 저장소·venv·`node_modules`·`data/`(DB·모델 캐시)·`tools/`·pip/npm 캐시. C: 는 OS 전용이다(`CLAUDE.md` 7절). 아래 명령은 그 전제로 쓰여 있다.
+
 ### ⚠️ Python 3.12 가상환경이 필수다
 
 이 PC 의 기본 `python` 은 **3.14** 이고 프로젝트는 **3.12** 를 요구한다(`backend/pyproject.toml`). 가상환경 없이 실행하면 패키지가 없어 `ModuleNotFoundError` 가 난다.
@@ -24,9 +28,13 @@ py -3.12 -m venv backend\.venv
 backend\.venv\Scripts\python.exe -m pip install -e "backend[youtube,stt,dev]"
 Copy-Item .env.example .env          # .env 는 커밋하지 않는다
 
-# PO 토큰 제공자(bgutil) — pip 패키지만으로는 동작하지 않는다 (docs/internal/검토서_트러블슈팅.md T-001)
-git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider "$env:USERPROFILE\bgutil-ytdlp-pot-provider"
-Push-Location "$env:USERPROFILE\bgutil-ytdlp-pot-provider\server"; npm ci; npx tsc; Pop-Location
+# PO 토큰 제공자(bgutil) — pip 패키지만으로는 동작하지 않는다 (docs/internal/검토서_트러블슈팅.md T-001). 저장소 안 tools\ 에 둔다 (D:, git 미추적)
+git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider tools\bgutil-ytdlp-pot-provider
+Push-Location tools\bgutil-ytdlp-pot-provider\server; npm ci; npx tsc; Pop-Location
+
+# pip·npm 캐시도 D: 로 (최초 1회, 사용자 설정에 기록된다 — CLAUDE.md 7절)
+backend\.venv\Scripts\python.exe -m pip config set global.cache-dir D:\claude\.cache\pip
+npm config set cache D:\claude\.cache\npm
 
 # 프론트
 Push-Location frontend; npm install; Pop-Location
@@ -52,7 +60,7 @@ Phase 0 에는 사용자 기능이 없다. 채널 동기화(P1)·스크립트(P2
 
 ```powershell
 Push-Location backend
-.\.venv\Scripts\python.exe -m pytest                              # 등급 A+B (E2E 제외) — 226건
+.\.venv\Scripts\python.exe -m pytest                              # 등급 A+B (E2E 제외) — 228건
 .\.venv\Scripts\python.exe -m pytest --cov --cov-report=term      # 커버리지 (A ≥ 90%, B ≥ 70%)
 .\.venv\Scripts\python.exe -m ruff check src tests ..\scripts\verify_docs.py
 Pop-Location

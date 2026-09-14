@@ -149,7 +149,7 @@ class Analyzer(Protocol):             # NullAnalyzer(v1) ↔ Extractive / Ollama
 | 구성요소 | 개발 VM | 배포(P4) |
 |---|---|---|
 | 플러그인 | pip `bgutil-ytdlp-pot-provider` (venv) | PyInstaller에 포함 |
-| 스크립트 | `~/bgutil-ytdlp-pot-provider/server/build/generate_once.js` (git clone + `npm ci` + `npx tsc`) | 빌드 산출물 `generate_once.js`(+node_modules)를 앱 리소스로 동봉 |
+| 스크립트 | 저장소 안 `tools/bgutil-ytdlp-pot-provider/server/build/generate_once.js` (git clone + `npm ci` + `npx tsc`; git 미추적, D: 우선 규칙) | 빌드 산출물 `generate_once.js`(+node_modules)를 앱 리소스로 동봉 |
 | Node | 시스템 Node 24 | 시스템 Node 감지 → 없으면 동봉 Node 바이너리(P4 판단) |
 | 설정 | `.env` `BGUTIL_SCRIPT_PATH` | 앱 리소스 경로로 자동 설정 |
 
@@ -177,7 +177,7 @@ class Analyzer(Protocol):             # NullAnalyzer(v1) ↔ Extractive / Ollama
         │
         └─ 트랙 없음 ──▶ audio/<id>.m4a (캐시) ──transcribe──▶ whisper/<id>.<model>.json (원본 보존) ──▶ (같은 경로)
                                                                                                           │
-                                                                        [P5] analyses ◀── Analyzer.analyze ─┘
+                                                       [P3] analyses ◀── 사용자 붙여넣기(manual) · [P5] ◀── Analyzer.analyze ─┘
 ```
 
 - 각 화살표는 **작업(job) 하나**의 단위다. 작업은 자연키 기준으로 멱등하다(6절).
@@ -215,9 +215,11 @@ class AnalyzerRegistry:
 |---|---|---|
 | Protocol `Analyzer` | 정의만 | 구현체 추가 |
 | 레지스트리 | `NullAnalyzer` 하나. `available()`은 빈 목록 | 설정(`.env` `ANALYZERS`)으로 켠 구현체 등록 |
-| DB `analyses` | 스키마만(P1) | 결과 저장 |
-| API | `GET /analyzers` → `[]`; `POST /videos/{id}/analyses` → **501** + `{"available": []}` | 200 + 결과 |
-| 화면 | "분석" 탭에 "설정된 분석기가 없습니다" | 결과 렌더 |
+| DB `analyses` | 스키마(P1). **수동 글**(`analyzer_name="manual"`, `analyzer_version="user"`) 저장(P3) | 자동 분석 결과도 같은 테이블, 출처로 구분 |
+| API | `GET /analyzers` → `[]`; `POST /videos/{id}/analyses` — 수동(`manual`) 입력이면 **201 저장**, 분석기 요청이면 **501** + `{"available": []}` (P3) | 자동도 201 |
+| 화면 | '요약 및 정리' 탭 — 스크립트 **원클릭 복사**, 붙여넣기 편집기 + 저장; 자동 분석 버튼은 "설정된 분석기가 없습니다" (P3) | 자동 결과도 같은 탭에 출처 표시 |
+
+수동 입력은 `Analyzer`가 아니다 — 계산이 없으므로 레지스트리를 거치지 않고 저장소에 바로 기록한다(`constants.MANUAL_ANALYZER_NAME`, scope 2.4절 v2).
 
 완료 기준: P5에서 분석기를 붙일 때 `analysis/` 밖은 **설정 한 줄**만 바뀐다.
 

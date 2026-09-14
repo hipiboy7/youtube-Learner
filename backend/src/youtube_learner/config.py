@@ -37,6 +37,17 @@ def resource_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def project_root() -> Path:
+    """저장소 루트(backend/ 의 부모). 도구(tools/)가 여기 기준이다. frozen 번들에서는 resource_root() 와 같다."""
+    root = resource_root()
+    return root if getattr(sys, "frozen", False) else root.parent
+
+
+def _default_bgutil_script() -> Path:
+    """PO 토큰 스크립트 기본 위치 — 저장소 안 tools/ (디스크 D: 우선 규칙, CLAUDE.md 7절). 홈 디렉토리(C:)에 두지 않는다."""
+    return project_root() / "tools" / "bgutil-ytdlp-pot-provider" / "server" / "build" / "generate_once.js"
+
+
 class Settings(BaseSettings):
     """환경별 설정. 키 목록은 P0 에서 확정 — 이후 Phase 는 추가만 한다 (FR-1)."""
 
@@ -59,7 +70,7 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8765, ge=1, le=65535)
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=lambda: list(_DEFAULT_CORS))
     ytdlp_js_runtime: str = "node"
-    bgutil_script_path: Path = Path("~/bgutil-ytdlp-pot-provider/server/build/generate_once.js")
+    bgutil_script_path: Path = Field(default_factory=_default_bgutil_script)
     bgutil_http_enabled: bool = False
     stt_cpu_threads: int = Field(default_factory=lambda: os.cpu_count() or 1, ge=1)
     analyzers: Annotated[list[str], NoDecode] = Field(default_factory=list)

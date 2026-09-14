@@ -42,8 +42,8 @@ REQUIRED_MODULES: dict[str, str] = {
 }
 CONFIG_FILES = ("stt_default", "ytdlp_default", "sync_default")
 BGUTIL_BUILD_HINT = (
-    "git clone https://github.com/Brainicism/bgutil-ytdlp-pot-provider (홈 디렉토리) → server/ 에서 npm ci && npx tsc "
-    "(docs/internal/검토서_트러블슈팅.md T-001)"
+    "저장소 루트에서 git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider tools\\bgutil-ytdlp-pot-provider "
+    "→ server/ 에서 npm ci && npx tsc (D: 우선 — 홈 디렉토리에 두지 않는다; docs/internal/검토서_트러블슈팅.md T-001)"
 )
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]

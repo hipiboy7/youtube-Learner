@@ -65,6 +65,8 @@ YT_VIDEO_ID_PATTERN: Final = r"^[A-Za-z0-9_-]{11}$"
 YT_CHANNEL_ID_PATTERN: Final = r"^UC[A-Za-z0-9_-]{22}$"
 STAGE_NAME_PATTERN: Final = r"^[a-z0-9_]+$"
 PACKAGE_NAME: Final = "youtube_learner"
+MANUAL_ANALYZER_NAME: Final = "manual"      # v2 — 사용자가 붙여 넣은 요약·정리의 analyses 출처 (scope 2.4절)
+MANUAL_ANALYZER_VERSION: Final = "user"
 
 def split_caption_key(key: str) -> tuple[str, bool]: ...   # "ko-orig" → ("ko", True); "" → ValueError
 def original_caption_key(language: str) -> str: ...        # "ko" → "ko-orig"
@@ -134,7 +136,7 @@ class Settings(BaseSettings):
     api_port: int = Field(8765, ge=1, le=65535)
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]   # 콤마 구분 문자열 허용
     ytdlp_js_runtime: str = "node"
-    bgutil_script_path: Path = Path("~/bgutil-ytdlp-pot-provider/server/build/generate_once.js")
+    bgutil_script_path: Path = Field(default_factory=_default_bgutil_script)   # project_root()/tools/… — D: 우선 규칙 (정정 2026-09-14)
     bgutil_http_enabled: bool = False
     stt_cpu_threads: int = Field(default_factory=lambda: os.cpu_count() or 1, ge=1)
     analyzers: list[str] = []
@@ -150,6 +152,7 @@ class Settings(BaseSettings):
     def apply_process_env(self) -> None           # HF_HOME, HF_HUB_DISABLE_SYMLINKS_WARNING=1, PYTHONUTF8=1
 
 def resource_root() -> Path            # 개발: backend/ ; PyInstaller frozen: sys._MEIPASS (P4)
+def project_root() -> Path             # 저장소 루트(backend/ 의 부모). tools/ 기준. frozen 에서는 resource_root()
 def get_settings() -> Settings         # 캐시 없음 — 테스트가 env를 바꿔 여러 번 만든다
 def load_json_config(name: str, settings: Settings) -> dict[str, Any]
 ```
@@ -166,6 +169,7 @@ def load_json_config(name: str, settings: Settings) -> dict[str, Any]
 - **왜 `HF_HOME` 기본을 `DATA_DIR/models`로 우리가 정하나** — HF 기본(C: 사용자 프로필)은 이 VM에서 여유가 가장 적은 드라이브였고 심볼릭 링크 미지원으로 공간을 더 썼다(T-002). 데이터와 모델을 한 루트 아래 두면 "어디에 얼마나 쓰는가"가 한 곳에서 보인다. `.env`로 다른 드라이브를 지정할 수 있다.
 - **왜 `apply_process_env`가 별도 호출인가** — `huggingface_hub`는 import 시점에 `HF_HOME`을 읽는다. Settings 생성 시 자동으로 `os.environ`을 바꾸면 "설정 객체를 만들었더니 환경이 바뀌었다"는 숨은 부작용이 생기고 테스트가 서로 오염된다. → 대안 "생성자에서 자동 적용"은 기각. CLI·API 진입점이 `settings.apply_process_env()`를 **faster_whisper import 전에** 명시 호출한다(P2 계약).
 - **왜 `CONFIG_DIR`를 패키지 위치에서 유도하나** — 작업 디렉토리 기준 상대경로는 "어디서 실행했나"에 따라 깨진다(참조 프로젝트 Phase 1 사고와 같은 유형). `resource_root()`가 개발(`backend/`)과 P4 frozen 번들을 구분하는 단일 지점이다.
+- **왜 bgutil 스크립트 기본 위치가 저장소 안 `tools/`인가** — 사용자 규칙 "로컬 디스크는 D: 우선"(2026-09-14, `CLAUDE.md` 7절). 플러그인의 기본 경로(`~`)는 홈 디렉토리(C:)다. 저장소 아래에 두면 프로젝트가 있는 드라이브를 자동으로 따르고 git 은 추적하지 않는다. yt-dlp 에는 P2 가 `extractor_args` 로 이 경로를 명시해 넘긴다(`설계서_Architecture` 3.1절). → 대안 "홈 디렉토리 기본값 + .env 덮어쓰기"는 새 PC 에서 규칙을 어기는 기본값이 된다.
 - **왜 pydantic-settings인가** — 타입 변환·검증·`.env` 로딩을 한 번에. 콤마 구분 목록(`CORS_ORIGINS`)은 `field_validator(mode="before")`로 분할. → `os.environ` 직접 읽기는 검증이 흩어진다.
 - **왜 `_comment`를 필수로 하나** — 설정 JSON은 "왜 이 값인가"를 잃기 쉽다. 파일이 스스로 근거를 들고 다니게 강제한다. 로더가 제거해 코드에 새지 않는다.
 - **왜 `get_settings()`에 캐시가 없나** — 테스트가 환경변수를 바꿔 다른 Settings를 만든다. 캐시는 API 앱(P1)이 자기 수명 안에서 한다.
@@ -370,6 +374,7 @@ def build_registry(settings: Settings) -> AnalyzerRegistry
 
 - **왜 `NullAnalyzer`가 존재하나** — "분석기 없음"을 `None` 검사로 처리하면 API·화면·작업 코드 곳곳에 `if analyzer is None`이 생긴다. Null 객체는 같은 인터페이스로 "설정되지 않았다"를 **예외로** 말한다. API(P1)는 이 예외를 501로 매핑한다.
 - **왜 `available()`에서 null을 빼나** — 화면의 분석기 목록에 "null"이 보이면 사용자는 선택 가능한 것으로 오해한다. null은 내부 표현이다.
+- **수동 입력은 왜 `Analyzer`가 아닌가** (v2) — 계산이 없다. 사용자가 외부 AI 챗에서 받아 붙여 넣은 글은 저장소(P1 `analyses`)에 `MANUAL_ANALYZER_NAME` 출처로 바로 기록한다(P3). 레지스트리는 **자동** 분석기만 관리하고, `available()`이 비어 있어도 수동 저장은 된다.
 - **왜 `build_registry`가 미구현 이름에 예외를 내나** — `.env`에 `ANALYZERS=ollama`를 적었는데 조용히 무시되면 사용자는 "왜 안 되지"를 몇 시간 찾는다. 기동 시점에 시끄럽게 실패한다.
 - P5 완료 기준("`analysis/` 밖 수정 없음")을 지키는 구조: 구현체 추가 = `analysis/` 안에 파일 추가 + `build_registry`의 이름→팩토리 표 한 줄.
 
