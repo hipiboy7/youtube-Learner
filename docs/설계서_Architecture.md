@@ -273,7 +273,7 @@ class AnalyzerRegistry:
 
 ### 8.1 개발 (P0~P3)
 
-`backend\.venv` + `uvicorn` (`cli/serve.py`) + `frontend` Vite dev server. `scripts/dev.ps1`이 둘을 띄운다(P3).
+`backend\.venv` + `uvicorn` (`cli/serve.py`) + `frontend` Vite dev server. 둘을 함께 띄우는 dev 스크립트는 P3 에서 `scripts/` 아래에 추가한다(10절 트리의 `dev.ps1`).
 
 ### 8.2 데스크톱 (P4) — Tauri v2 사이드카
 

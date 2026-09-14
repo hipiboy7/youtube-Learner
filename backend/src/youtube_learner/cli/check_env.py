@@ -98,7 +98,9 @@ def check_imports(modules: dict[str, str] | None = None) -> list[CheckResult]:
 def check_node(which: Callable[[str], str | None] = shutil.which, run: Runner = subprocess.run) -> CheckResult:
     path = which("node")
     if not path:
-        return CheckResult("node", Level.FAIL, f"node 를 PATH 에서 찾을 수 없다 — Node ≥ {MIN_NODE_MAJOR} 설치 필요 (yt-dlp JS 런타임·bgutil)")
+        return CheckResult(
+            "node", Level.FAIL, f"node 를 PATH 에서 찾을 수 없다 — Node ≥ {MIN_NODE_MAJOR} 설치 필요 (yt-dlp JS 런타임·bgutil)"
+        )
     try:
         proc = run([path, "--version"], capture_output=True, text=True, timeout=15, check=False)
     except (OSError, subprocess.SubprocessError) as exc:

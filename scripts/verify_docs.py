@@ -161,7 +161,8 @@ def command_lines(text: str) -> list[tuple[int, str]]:
         if head_clean.startswith((".\\", "./")):
             out.append((line_no, line))
             continue
-        head_name = head_clean.split("/")[-1].split("\\")[-1]
+        # `backend\.venv\Scripts\python.exe` 처럼 전체 경로·.exe 로 쓴 명령도 명령이다 (역테스트가 잡은 누락)
+        head_name = head_clean.split("/")[-1].split("\\")[-1].removesuffix(".exe")
         if head_name in COMMAND_HEADS or head_clean in COMMAND_HEADS:
             out.append((line_no, line))
     return out
@@ -183,7 +184,10 @@ def tracked_files() -> set[str]:
 
 def check_venv(doc: Path, text: str, commands: list[tuple[int, str]]) -> list[Finding]:
     lines = text.splitlines()
-    activate_line = next((i for i, l in enumerate(lines, start=1) if any(m in l for m in ACTIVATE_MARKERS)), None)
+    activate_line = next(
+        (index for index, content in enumerate(lines, start=1) if any(marker in content for marker in ACTIVATE_MARKERS)),
+        None,
+    )
     findings: list[Finding] = []
     for line_no, line in commands:
         cmd = strip_comment(line)
@@ -337,7 +341,9 @@ def check_tables(doc: Path, text: str) -> list[Finding]:
         following = lines[index + 3] if index + 3 < len(lines) else ""
         if _TABLE_SEPARATOR.match(following):
             continue
-        findings.append(Finding(doc, index + 2, "table", "표 중간에 빈 줄이 있어 두 개로 쪼개진다 — 빈 줄을 지워야 행이 표에 붙는다"))
+        findings.append(
+            Finding(doc, index + 2, "table", "표 중간에 빈 줄이 있어 두 개로 쪼개진다 — 빈 줄을 지워야 행이 표에 붙는다")
+        )
     return findings
 
 

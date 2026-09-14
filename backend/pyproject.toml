@@ -59,17 +59,18 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["youtube_learner"]
+source = ["youtube_learner", "../scripts"]  # scripts/verify_docs.py 의 검사 함수(등급 A)도 측정한다
 branch = true
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
 # Protocol 선언만 있는 모듈은 실행 로직이 없어 커버리지 측정 대상이 아니다 (설계서 5.2절)
-omit = ["*/domain/interfaces.py"]
+omit = ["*/domain/interfaces.py", "*/spike/*"]  # spike 는 등급 C (측정 제외)
 
 [tool.ruff]
-line-length = 120
+# 한국어 메시지·docstring 이 많아 120 은 의미 없는 줄바꿈을 강요했다(P0 에서 23건). 140 으로 두고 그 이상은 나눈다.
+line-length = 140
 target-version = "py312"
 src = ["src", "tests"]
 

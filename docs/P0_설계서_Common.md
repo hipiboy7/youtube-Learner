@@ -291,8 +291,9 @@ class ContextLoggerAdapter(logging.LoggerAdapter):
 def new_run_id(now: datetime | None = None) -> str            # "20260914-043000-1a2b3c4d" (UTC)
 def status_path(settings: Settings, stage: str, run_id: str) -> Path
 @contextmanager
-def run_context(stage: str, settings: Settings, logger: logging.Logger | None = None, *, extra: Mapping[str, Any] | None = None
-               ) -> Iterator[tuple[str, ContextLoggerAdapter]]
+def run_context(stage: str, settings: Settings, logger: logging.Logger | None = None,
+                *, run_id: str | None = None, extra: Mapping[str, Any] | None = None
+               ) -> Iterator[tuple[str, ContextLoggerAdapter]]     # run_id 주입은 테스트·재실행용 (SelfReview 1.1 정정)
 def read_status(path: Path) -> dict[str, Any]
 ```
 
@@ -324,7 +325,7 @@ def read_status(path: Path) -> dict[str, Any]
 
 ```python
 class Base(DeclarativeBase): ...
-def make_engine(settings: Settings, *, echo: bool = False) -> Engine     # sqlite:///<db_path>, connect 이벤트에서 PRAGMA
+def make_engine(settings: Settings, *, echo: bool = False) -> Engine     # data_dir 생성 + sqlite:///<db_path>, connect 이벤트에서 PRAGMA
 def make_session_factory(engine: Engine) -> sessionmaker[Session]
 def init_db(engine: Engine) -> dict[str, Any]                            # create_all + {"journal_mode": "wal", "foreign_keys": 1, "busy_timeout": 5000}
 ```
@@ -334,7 +335,8 @@ def init_db(engine: Engine) -> dict[str, Any]                            # creat
 - **왜 SQLite 단일 파일인가** — 단일 사용자·단일 PC·수천 행. 서버 프로세스가 없어 데스크톱 배포(P4)가 단순하다. → PostgreSQL은 설치·운영 부담이 목적을 넘는다.
 - **왜 WAL인가** — API가 읽는 동안 워커가 쓴다(P2). 기본 rollback journal은 쓰기 중 읽기를 막아 화면이 멎는다. `busy_timeout=5000`으로 짧은 잠금 경합은 대기로 넘긴다.
 - **왜 `foreign_keys=ON`을 연결마다 켜나** — SQLite는 기본이 OFF이고 연결 단위 설정이다. 연결 풀에서 새 연결이 나올 때마다 켜야 한다(`event.listens_for(engine, "connect")`).
-- **왜 `init_db`가 PRAGMA 적용값을 반환하나** — "설정했다"와 "적용됐다"는 다르다(WAL은 파일 DB에서만 유효). 반환값을 `check_env`가 표시하고 테스트가 검증한다.
+- **왜 `init_db`가 PRAGMA 적용값을 반환하나** — "설정했다"와 "적용됐다"는 다르다(WAL은 파일 DB에서만 유효). 반환값을 테스트가 검증한다(`check_env`는 DB를 열지 않는다 — 검사가 DB 파일을 만들면 안 된다).
+- **왜 `data_dir` 생성이 `make_engine`에 있나** — SQLite는 부모 디렉토리가 없으면 파일을 만들지 못한다. 엔진을 만드는 순간이 "이 경로에 DB가 있을 것"을 처음 아는 지점이다. (SelfReview 1.1 정정 — 초판은 `init_db`가 만든다고 적었다)
 - Alembic은 P1(첫 테이블)부터. P0는 `Base`만 둔다 — 빈 스키마에 마이그레이션 도구를 얹는 것은 과설계.
 
 ### 8.3 검증 방법

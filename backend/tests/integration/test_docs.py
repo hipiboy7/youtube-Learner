@@ -205,3 +205,31 @@ class TestCommandLines:
     def test_extracts_only_shell_fence_commands(self):
         text = "```powershell\n# 주석\n.\\scripts\\x.ps1\nPS> git status\n$env:X = '1'\n```\n```python\nprint(1)\n```\n"
         assert verify_docs.command_lines(text) == [(3, ".\\scripts\\x.ps1"), (4, "git status")]
+
+    def test_full_path_python_exe_is_a_command(self):
+        """역테스트가 잡은 누락 — `backend\\.venv\\Scripts\\python.exe -m …` 도 명령이다."""
+        text = "```powershell\nbackend\\.venv\\Scripts\\python.exe -m pytest\n```\n"
+        assert len(verify_docs.command_lines(text)) == 1
+
+
+class TestHelpersAndMain:
+    def test_strip_comment_respects_quotes(self):
+        assert verify_docs.strip_comment('echo "# 주석 아님" # 진짜 주석') == 'echo "# 주석 아님"'
+        assert verify_docs.strip_comment("echo '#x'   ") == "echo '#x'"
+        assert verify_docs.strip_comment("# 전부 주석") == ""
+
+    def test_finding_str_for_doc_outside_root(self, tmp_path: Path):
+        doc = tmp_path / "x.md"
+        finding = verify_docs.Finding(doc, 3, "link", "깨진 링크")
+        assert "[link]" in str(finding) and "x.md:3" in str(finding)
+
+    def test_main_reports_missing_doc_and_returns_1(self, capsys: pytest.CaptureFixture[str]):
+        """FR-28 — --path 로 없는 문서를 주면 missing 위반, 종료 1."""
+        code = verify_docs.main(["--path", "docs/NOPE_없는문서.md", "--quiet"])
+        out = capsys.readouterr().out
+        assert code == 1 and "[missing]" in out
+
+    def test_main_single_clean_doc_returns_0(self, capsys: pytest.CaptureFixture[str]):
+        code = verify_docs.main(["--path", "CLAUDE.md"])
+        out = capsys.readouterr().out
+        assert code == 0 and "위반 없음" in out
