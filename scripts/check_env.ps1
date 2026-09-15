@@ -1,4 +1,4 @@
-# 환경 검사 래퍼 — 대응: docs/P0_설계서_Common.md 10절 (FR-27). CLAUDE.md 1절 0단계.
+﻿# 환경 검사 래퍼 — 대응: docs/P0_설계서_Common.md 10절 (FR-27). CLAUDE.md 1절 0단계.
 # 하는 일은 하나: backend\.venv 의 python 을 찾아 youtube_learner.cli.check_env 를 그대로 실행하고 종료 코드를 전달한다.
 # 검사 로직은 Python 에 있다(pytest 로 검증). 사용: .\scripts\check_env.ps1 [--json] [--strict]
 

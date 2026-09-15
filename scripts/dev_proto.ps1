@@ -1,4 +1,4 @@
-# 프로토타입 실행 — 백엔드(uvicorn :8765) + 프론트(Vite :5173) 를 각각 새 창으로 띄운다.
+﻿# 프로토타입 실행 — 백엔드(uvicorn :8765) + 프론트(Vite :5173) 를 각각 새 창으로 띄운다.
 # 대응: docs/internal/검토서_Prototype.md 2절. 사전: .\scripts\check_env.ps1 → READY, frontend\node_modules 설치.
 # 사용: .\scripts\dev_proto.ps1      종료: 두 창을 닫는다.
 
