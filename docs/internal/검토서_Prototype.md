@@ -102,6 +102,20 @@ segments: 20
 - **경계**: `youtube/`·`transcripts/`·`stt/`·`api/` 패키지와 `VideoListSource`·`TranscriptProvider`·`SttEngine` Protocol 구현으로 재배치.
 - **화면**: 설정·작업 모니터·복사 형식 옵션(qa Q3)·자동 분석 자리 미구현. 정식 화면 설계는 P3 요구사항정의서에서.
 
+## 7. 사용자 피드백 반영 (2026-09-15) — 복사 형식·프롬프트
+
+사용자가 같은 영상을 Gemini 에 (a) URL 만 주고, (b) 프로토타입 스크립트를 주고 요약시켜 비교를 요청했다(`docs/internal/qa/P3_질의응답_복사형식과요약비교.md`). 실제 자막과 대조한 결과 (b)가 원문에 더 충실했지만, 복사 텍스트에 제목·길이·타임스탬프가 없어 제목을 지어내고 길이를 틀렸다. 그래서:
+
+| 변경 | 내용 |
+|---|---|
+| 복사 텍스트 조립 | `frontend/src/lib/copyText.ts`(등급 A, 테스트 9건): **프롬프트 → 메타데이터 머리말 → [m:ss] 스크립트**. 머리말 = 제목·채널·URL·길이·게시일·스크립트 출처(source/언어/모델)·세그먼트 수·복사일. 없는 값은 "미제공"으로 적어 지어냄을 막는다 |
+| 복사 옵션 | 화면 "복사 형식" — 요약 프롬프트 포함 / 메타데이터 머리말 / 타임스탬프. **기본 전부 켬** |
+| 프롬프트 편집 | "✏️ 프롬프트 편집" → 편집기·💾 저장·기본값 복원. 서버 `proto_settings`(`GET/PUT/DELETE /proto/settings/summary_prompt`)에 보관, 기본/편집본 표시 |
+| 기본 프롬프트 | `backend/src/youtube_learner/proto/prompts.py` — 사용자의 "영상 학습 아키텍트" 프롬프트를 붙여 넣기용으로 손봄: 머리말·스크립트만 신뢰, 미제공은 추정 금지, 자동 자막 오인식은 복원 후 `[교정]` 표시, 원문에 없는 교재·수치 보강 금지 |
+| API | `GET /proto/videos/{id}` 에 `channel_title`·`yt_channel_id` 추가(머리말용) |
+
+P3 로 넘길 결정은 qa 문서에 있다(복사 3요소·기본값, 프롬프트 CRUD, 템플릿 복수 여부는 미결).
+
 ## 6. 브랜치 처리
 
 `prototype/e2e-slice` 는 **참고용으로 보존**하고 `main` 에 병합하지 않는다(코드가 정식 경계를 어기므로). Phase 1~3 프롬프트는 이 문서 4·5절을 "실측 근거"로 인용한다. 이 검토서와 `history/2026-09-15_park.sei_prototype-e2e.md` 만 필요하면 `impl-phase1` 로 cherry-pick 한다.

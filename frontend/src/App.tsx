@@ -2,6 +2,7 @@
 // 대응: docs/internal/검토서_Prototype.md 3절. 정식 화면 설계는 Phase 3 에서 다시 한다.
 import { useCallback, useEffect, useState } from "react";
 import { API_BASE_URL } from "./lib/api";
+import { buildCopyText } from "./lib/copyText";
 import { formatTimestamp } from "./lib/time";
 
 type Kind = "long" | "short";
@@ -12,9 +13,10 @@ type Video = {
   thumbnail_url: string | null; upload_date: string | null; language: string | null;
   transcript_status: "none" | "pending" | "done" | "failed"; transcript_source: string | null; transcript_language: string | null;
   transcript_model: string | null; transcript_error: string | null; progress: number; has_summary?: boolean;
-  segments?: Segment[]; full_text?: string;
+  segments?: Segment[]; full_text?: string; channel_title?: string | null;
 };
 type Summary = { text: string; service: string; updated_at: string | null };
+type Prompt = { text: string; is_default: boolean; updated_at: string | null };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, { headers: { "Content-Type": "application/json" }, ...init });
@@ -35,7 +37,12 @@ export default function App() {
   const [limit, setLimit] = useState(12);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [withTimestamps, setWithTimestamps] = useState(false);
+  // 복사 옵션 — 기본값: 타임스탬프·머리말·프롬프트 전부 켬 (Gemini 비교 결과: 제목·길이·타임스탬프가 빠지면 요약이 지어낸다)
+  const [withTimestamps, setWithTimestamps] = useState(true);
+  const [withHeader, setWithHeader] = useState(true);
+  const [withPrompt, setWithPrompt] = useState(true);
+  const [prompt, setPrompt] = useState<Prompt>({ text: "", is_default: true, updated_at: null });
+  const [promptDraft, setPromptDraft] = useState<string | null>(null); // null = 편집기 닫힘
 
   const say = (msg: string) => { setNotice(msg); window.setTimeout(() => setNotice(null), 4000); };
 
@@ -57,6 +64,7 @@ export default function App() {
   }, []);
 
   useEffect(() => { loadChannels().catch((e) => say(`백엔드 연결 실패: ${e.message}`)); }, [loadChannels]);
+  useEffect(() => { api<Prompt>("/proto/settings/summary_prompt").then(setPrompt).catch(() => undefined); }, []);
   useEffect(() => { loadVideos().catch((e) => say(e.message)); }, [loadVideos]);
   useEffect(() => {
     if (!selected || selected.transcript_status !== "pending") return;
@@ -89,11 +97,28 @@ export default function App() {
 
   async function copyTranscript() {
     if (!selected?.segments?.length) return;
-    const text = withTimestamps
-      ? selected.segments.map((s) => `[${formatTimestamp(s.start_ms)}] ${s.text}`).join("\n")
-      : selected.full_text ?? "";
+    const text = buildCopyText(selected, selected.segments, { withTimestamps, withHeader, withPrompt, prompt: prompt.text });
     await navigator.clipboard.writeText(text);
-    say(`스크립트 ${text.length.toLocaleString()}자를 클립보드에 복사했다 — AI 챗 서비스에 붙여 넣으세요`);
+    const parts = [withPrompt && "프롬프트", withHeader && "머리말", withTimestamps ? "타임스탬프 스크립트" : "스크립트"].filter(Boolean).join(" + ");
+    say(`${parts} ${text.length.toLocaleString()}자를 클립보드에 복사했다 — AI 챗 서비스에 붙여 넣으세요`);
+  }
+
+  async function savePrompt() {
+    if (promptDraft === null) return;
+    try {
+      setPrompt(await api<Prompt>("/proto/settings/summary_prompt", { method: "PUT", body: JSON.stringify({ text: promptDraft }) }));
+      setPromptDraft(null);
+      say("프롬프트를 저장했다 — 이후 복사에 적용된다");
+    } catch (e) { say(`프롬프트 저장 실패: ${(e as Error).message}`); }
+  }
+
+  async function resetPrompt() {
+    try {
+      const p = await api<Prompt>("/proto/settings/summary_prompt", { method: "DELETE" });
+      setPrompt(p);
+      setPromptDraft(promptDraft === null ? null : p.text);
+      say("프롬프트를 기본값으로 되돌렸다");
+    } catch (e) { say(`복원 실패: ${(e as Error).message}`); }
   }
 
   async function saveSummary() {
@@ -172,7 +197,6 @@ export default function App() {
                   <button onClick={() => fetchTranscript(false)} disabled={!!busy || selected.transcript_status === "pending"}>스크립트 가져오기</button>
                   <button onClick={() => fetchTranscript(true)} disabled={!!busy || selected.transcript_status === "pending"} title="자막이 있어도 Whisper 로 전사">Whisper 로 전사</button>
                   <button onClick={copyTranscript} disabled={selected.transcript_status !== "done"} style={{ fontWeight: 700 }}>📋 스크립트 복사</button>
-                  <label style={{ fontSize: "0.85rem" }}><input type="checkbox" checked={withTimestamps} onChange={(e) => setWithTimestamps(e.target.checked)} /> 타임스탬프 포함</label>
                   <span style={{ fontSize: "0.85rem", color: "#57606a" }}>
                     상태 {statusLabel[selected.transcript_status]}
                     {selected.transcript_status === "pending" && ` ${Math.round(selected.progress * 100)}%`}
@@ -185,6 +209,30 @@ export default function App() {
                   </div>
                 )}
                 {selected.transcript_error && <p style={{ color: "#cf222e" }}>{selected.transcript_error}</p>}
+
+                <fieldset style={{ border: "1px solid #d0d7de", borderRadius: 6, padding: "0.4rem 0.6rem", marginBottom: "0.6rem", fontSize: "0.85rem" }}>
+                  <legend style={{ color: "#57606a" }}>복사 형식</legend>
+                  <label style={{ marginRight: "0.8rem" }}><input type="checkbox" checked={withPrompt} onChange={(e) => setWithPrompt(e.target.checked)} /> 요약 프롬프트 포함</label>
+                  <label style={{ marginRight: "0.8rem" }}><input type="checkbox" checked={withHeader} onChange={(e) => setWithHeader(e.target.checked)} /> 메타데이터 머리말(제목·채널·URL·길이·게시일·출처)</label>
+                  <label style={{ marginRight: "0.8rem" }}><input type="checkbox" checked={withTimestamps} onChange={(e) => setWithTimestamps(e.target.checked)} /> 타임스탬프 [m:ss]</label>
+                  <button onClick={() => setPromptDraft(promptDraft === null ? prompt.text : null)} style={{ marginLeft: "0.4rem" }}>
+                    {promptDraft === null ? "✏️ 프롬프트 편집" : "편집 닫기"}
+                  </button>
+                  <span style={{ marginLeft: "0.6rem", color: "#57606a" }}>
+                    {prompt.is_default ? "기본 프롬프트" : `사용자 편집본${prompt.updated_at ? ` (저장 ${new Date(prompt.updated_at).toLocaleString()})` : ""}`}
+                  </span>
+                  {promptDraft !== null && (
+                    <div style={{ marginTop: "0.5rem" }}>
+                      <textarea value={promptDraft} onChange={(e) => setPromptDraft(e.target.value)} spellCheck={false}
+                        style={{ width: "100%", minHeight: 220, padding: "0.5rem", boxSizing: "border-box", fontFamily: "ui-monospace, monospace", fontSize: "0.8rem" }} />
+                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.3rem" }}>
+                        <button onClick={savePrompt} style={{ fontWeight: 700 }} disabled={!promptDraft.trim()}>💾 프롬프트 저장</button>
+                        <button onClick={resetPrompt}>기본값 복원</button>
+                        <span style={{ color: "#57606a" }}>{promptDraft.length.toLocaleString()}자 · 복사 텍스트 맨 앞에 붙는다</span>
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
 
                 <div style={{ maxHeight: "34vh", overflow: "auto", border: "1px solid #d0d7de", borderRadius: 6, padding: "0.5rem", marginBottom: "1rem", fontSize: "0.92rem" }}>
                   {selected.segments?.length ? selected.segments.map((s) => (

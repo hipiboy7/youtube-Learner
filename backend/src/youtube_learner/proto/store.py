@@ -52,6 +52,16 @@ class ProtoVideo(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
 
 
+class ProtoSetting(Base):
+    """화면 설정(키/값) — 요약 프롬프트 템플릿 등. 사용자 편집을 서버에 보관해 어느 브라우저에서도 같게."""
+
+    __tablename__ = "proto_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
 class ProtoSummary(Base):
     """'요약 및 정리' — 사용자가 외부 AI 챗에서 받아 붙여 넣은 글. analyzer_name='manual' 의 프로토타입."""
 

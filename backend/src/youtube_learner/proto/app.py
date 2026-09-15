@@ -24,7 +24,8 @@ from youtube_learner.constants import MANUAL_ANALYZER_NAME, TranscriptSource, Vi
 from youtube_learner.exceptions import YoutubeLearnerError
 from youtube_learner.logging_config import setup_logging
 from youtube_learner.proto import stt, yt
-from youtube_learner.proto.store import ProtoChannel, ProtoSummary, ProtoVideo, now_utc
+from youtube_learner.proto.prompts import DEFAULT_SUMMARY_PROMPT, SETTING_KEY_SUMMARY_PROMPT
+from youtube_learner.proto.store import ProtoChannel, ProtoSetting, ProtoSummary, ProtoVideo, now_utc
 from youtube_learner.repository.db import init_db, make_engine, make_session_factory
 
 settings: Settings = get_settings()
@@ -59,6 +60,10 @@ class SummaryIn(BaseModel):
 
 class TranscriptIn(BaseModel):
     force_whisper: bool = False
+
+
+class PromptIn(BaseModel):
+    text: str = Field(min_length=1, max_length=20000)
 
 
 def _video_out(v: ProtoVideo, with_transcript: bool = False) -> dict[str, Any]:
@@ -160,7 +165,48 @@ def list_videos(channel_id: int, kind: str = "long") -> list[dict[str, Any]]:
 @app.get("/proto/videos/{yt_video_id}")
 def get_video(yt_video_id: str) -> dict[str, Any]:
     with SessionLocal() as session:
-        return _video_out(_get_video(session, yt_video_id), with_transcript=True)
+        video = _get_video(session, yt_video_id)
+        channel = session.get(ProtoChannel, video.channel_id)
+        out = _video_out(video, with_transcript=True)
+        out["channel_title"] = channel.title if channel else None
+        out["yt_channel_id"] = channel.yt_channel_id if channel else None
+        return out
+
+
+def _prompt_out(row: ProtoSetting | None) -> dict[str, Any]:
+    if row is None:
+        return {"text": DEFAULT_SUMMARY_PROMPT, "is_default": True, "updated_at": None}
+    return {"text": row.value, "is_default": row.value == DEFAULT_SUMMARY_PROMPT, "updated_at": row.updated_at.isoformat()}
+
+
+@app.get("/proto/settings/summary_prompt")
+def get_summary_prompt() -> dict[str, Any]:
+    """복사 시 앞에 붙이는 요약 요청 프롬프트. 저장된 것이 없으면 기본 템플릿."""
+    with SessionLocal() as session:
+        return _prompt_out(session.get(ProtoSetting, SETTING_KEY_SUMMARY_PROMPT))
+
+
+@app.put("/proto/settings/summary_prompt")
+def put_summary_prompt(body: PromptIn) -> dict[str, Any]:
+    with SessionLocal() as session:
+        row = session.get(ProtoSetting, SETTING_KEY_SUMMARY_PROMPT)
+        if row is None:
+            row = ProtoSetting(key=SETTING_KEY_SUMMARY_PROMPT)
+            session.add(row)
+        row.value, row.updated_at = body.text, now_utc()
+        session.commit()
+        return _prompt_out(row)
+
+
+@app.delete("/proto/settings/summary_prompt")
+def reset_summary_prompt() -> dict[str, Any]:
+    """기본값 복원 — 저장본을 지운다."""
+    with SessionLocal() as session:
+        row = session.get(ProtoSetting, SETTING_KEY_SUMMARY_PROMPT)
+        if row is not None:
+            session.delete(row)
+            session.commit()
+        return _prompt_out(None)
 
 
 def _save_transcript(yt_video_id: str, source: TranscriptSource, language: str, model: str | None, segments) -> None:

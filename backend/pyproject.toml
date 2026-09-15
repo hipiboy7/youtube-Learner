@@ -76,3 +76,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# 프롬프트 템플릿 본문은 사람이 읽는 문장이라 줄 길이 규칙을 적용하지 않는다 (프로토타입)
+"src/youtube_learner/proto/prompts.py" = ["E501"]
