@@ -1,0 +1,8 @@
+{
+  "_comment": "채널 동기화 규칙 (scope-definition 2.2절, 설계서_Architecture 4절). 근거: TechSpike 2026-09-14 — 탭 URL(/videos, /shorts)로 flat 추출 시 60건/2.4초, 숏폼 flat 에는 duration 이 없고 두 탭 모두 upload_date 가 없어 영상별 메타 보충이 필수. tabs 는 목록화할 탭(streams 는 v1 제외 — scope 9절). stop_on_known_id=true 는 증분 동기화(최신순 순회 중 이미 아는 id 에 닿으면 중단), full_rescan=true 면 끝까지 돈다. metadata_batch_size 는 한 작업이 보충하는 영상 수(네트워크 워커 1개·지터를 감안해 작게). lang_priority 는 원어 후보가 여럿일 때의 우선순위이며 없는 언어를 만들어 달라는 뜻이 아니다(scope 5.2절). 실행마다 조절하는 값이라 여기에 둔다.",
+  "tabs": ["videos", "shorts"],
+  "stop_on_known_id": true,
+  "full_rescan": false,
+  "metadata_batch_size": 20,
+  "lang_priority": ["ko"]
+}
