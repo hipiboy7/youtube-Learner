@@ -43,6 +43,10 @@ export default function App() {
   const [withPrompt, setWithPrompt] = useState(true);
   const [prompt, setPrompt] = useState<Prompt>({ text: "", is_default: true, updated_at: null });
   const [promptDraft, setPromptDraft] = useState<string | null>(null); // null = 편집기 닫힘
+  const [backendWarning, setBackendWarning] = useState<string | null>(null);
+  const [manualCopyText, setManualCopyText] = useState<string | null>(null); // 클립보드 실패 시 직접 선택·복사용
+
+  const EXPECTED_BACKEND = "proto-2";
 
   const say = (msg: string) => { setNotice(msg); window.setTimeout(() => setNotice(null), 4000); };
 
@@ -64,7 +68,16 @@ export default function App() {
   }, []);
 
   useEffect(() => { loadChannels().catch((e) => say(`백엔드 연결 실패: ${e.message}`)); }, [loadChannels]);
-  useEffect(() => { api<Prompt>("/proto/settings/summary_prompt").then(setPrompt).catch(() => undefined); }, []);
+  useEffect(() => {
+    api<{ version?: string }>("/health")
+      .then((h) => {
+        if (h.version !== EXPECTED_BACKEND) {
+          setBackendWarning(`백엔드가 옛 버전입니다 (${h.version ?? "버전 없음"} ≠ ${EXPECTED_BACKEND}). 프롬프트 저장 등이 동작하지 않습니다 — 두 창을 닫고 .\\scripts\\dev_proto.ps1 을 다시 실행하세요 (옛 서버를 자동 정리합니다).`);
+        }
+      })
+      .catch((e) => setBackendWarning(`백엔드(${API_BASE_URL})에 연결할 수 없습니다: ${e.message}`));
+    api<Prompt>("/proto/settings/summary_prompt").then(setPrompt).catch((e) => say(`프롬프트를 불러오지 못했다: ${e.message}`));
+  }, []);
   useEffect(() => { loadVideos().catch((e) => say(e.message)); }, [loadVideos]);
   useEffect(() => {
     if (!selected || selected.transcript_status !== "pending") return;
@@ -95,12 +108,32 @@ export default function App() {
     } catch (e) { say(`실패: ${(e as Error).message}`); } finally { setBusy(null); }
   }
 
+  async function writeClipboard(text: string): Promise<string> {
+    // 1) 표준 API (localhost·https 에서만 허용) → 2) 숨은 textarea + execCommand (구형/비보안 컨텍스트) → 3) 실패 시 수동 복사 상자
+    if (navigator.clipboard?.writeText) {
+      try { await navigator.clipboard.writeText(text); return "clipboard"; } catch { /* 아래 폴백 */ }
+    }
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.left = "-9999px";
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (!ok) throw new Error("브라우저가 클립보드 접근을 막았다");
+    return "execCommand";
+  }
+
   async function copyTranscript() {
-    if (!selected?.segments?.length) return;
+    if (!selected?.segments?.length) { say("복사할 스크립트가 없다 — 먼저 '스크립트 가져오기'"); return; }
     const text = buildCopyText(selected, selected.segments, { withTimestamps, withHeader, withPrompt, prompt: prompt.text });
-    await navigator.clipboard.writeText(text);
-    const parts = [withPrompt && "프롬프트", withHeader && "머리말", withTimestamps ? "타임스탬프 스크립트" : "스크립트"].filter(Boolean).join(" + ");
-    say(`${parts} ${text.length.toLocaleString()}자를 클립보드에 복사했다 — AI 챗 서비스에 붙여 넣으세요`);
+    const parts = [withPrompt && prompt.text.trim() && "프롬프트", withHeader && "머리말", withTimestamps ? "타임스탬프 스크립트" : "스크립트"].filter(Boolean).join(" + ");
+    try {
+      const how = await writeClipboard(text);
+      setManualCopyText(null);
+      say(`${parts} ${text.length.toLocaleString()}자를 클립보드에 복사했다 (${how}) — AI 챗 서비스에 붙여 넣으세요`);
+    } catch (e) {
+      setManualCopyText(text);
+      say(`클립보드 복사 실패: ${(e as Error).message} — 아래 상자에서 직접 전체 선택(Ctrl+A) 후 복사(Ctrl+C)하세요`);
+    }
   }
 
   async function savePrompt() {
@@ -140,6 +173,11 @@ export default function App() {
         <span style={{ color: "#57606a" }}>프로토타입 — API 서버 <code>{API_BASE_URL}</code></span>
         {notice && <span style={{ marginLeft: "auto", background: "#fff8c5", padding: "0.2rem 0.6rem", borderRadius: 6 }}>{notice}</span>}
       </header>
+      {backendWarning && (
+        <div style={{ background: "#ffebe9", border: "1px solid #ff8182", color: "#82071e", padding: "0.5rem 0.8rem", borderRadius: 6, marginTop: "0.6rem" }}>
+          ⚠️ {backendWarning}
+        </div>
+      )}
 
       <section style={{ display: "flex", gap: "0.5rem", margin: "1rem 0", alignItems: "center", flexWrap: "wrap" }}>
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="채널 URL 또는 @핸들" style={{ flex: "1 1 320px", padding: "0.45rem 0.6rem" }} />
@@ -243,6 +281,17 @@ export default function App() {
                     </div>
                   )) : <span style={{ color: "#57606a" }}>스크립트가 없다 — "스크립트 가져오기"</span>}
                 </div>
+
+                {manualCopyText !== null && (
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div style={{ fontSize: "0.85rem", color: "#82071e", marginBottom: "0.25rem" }}>
+                      클립보드 복사가 막혀 있어 아래 상자에 복사 텍스트를 넣었습니다 — 상자를 클릭해 Ctrl+A, Ctrl+C 로 복사하세요.
+                      <button onClick={() => setManualCopyText(null)} style={{ marginLeft: "0.5rem" }}>닫기</button>
+                    </div>
+                    <textarea readOnly value={manualCopyText} onFocus={(e) => e.currentTarget.select()}
+                      style={{ width: "100%", minHeight: 160, padding: "0.5rem", boxSizing: "border-box", fontFamily: "ui-monospace, monospace", fontSize: "0.8rem" }} />
+                  </div>
+                )}
 
                 <h3 style={{ fontSize: "1rem", margin: "0 0 0.25rem" }}>요약 및 정리 <small style={{ color: "#57606a" }}>외부 AI 챗 서비스에서 받은 글을 붙여 넣고 저장</small></h3>
                 <textarea value={summary.text} onChange={(e) => setSummary({ ...summary, text: e.target.value })}

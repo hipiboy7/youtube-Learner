@@ -89,9 +89,12 @@ def _get_video(session: Session, yt_video_id: str) -> ProtoVideo:
     return video
 
 
+PROTO_VERSION = "proto-2"  # 복사 형식·프롬프트 편집 포함. 화면이 옛 서버를 감지하는 데 쓴다
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
-    return {"ok": True, "prototype": True, "time": datetime.now(UTC).isoformat()}
+    return {"ok": True, "prototype": True, "version": PROTO_VERSION, "time": datetime.now(UTC).isoformat()}
 
 
 @app.get("/analyzers")
