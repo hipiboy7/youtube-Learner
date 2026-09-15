@@ -222,7 +222,7 @@ elapsed_s: 1.6
 ## 7. 재실행 (요약)
 
 ```powershell
-# 사전: backend\.venv 에 패키지 설치, ~/bgutil-ytdlp-pot-provider/server 빌드 (T-001)
+# 사전: backend\.venv 에 패키지 설치, tools\bgutil-ytdlp-pot-provider\server 빌드 (T-001·T-004 — 검증 당시엔 홈 디렉토리였다, 3.3절)
 $env:PYTHONUTF8 = "1"
 .\backend\.venv\Scripts\python.exe scripts\spike\p0_techspike.py --channel https://www.youtube.com/@sebasi15 --limit 60 --model small --threads 2 --out data\spike
 ```

@@ -1,7 +1,7 @@
 # P0 요구사항정의서 — Common
 
-- 상위 문서: `docs/scope-definition.md` (v1) 2.4절·4절·5.3절·7절·8절, `docs/설계서_Architecture.md` (v1) 2절·5절·6절·7절·9절
-- 사용 프롬프트: `docs/prompts/phase0/scope-and-common-modules-v1.md`
+- 상위 문서: `docs/scope-definition.md` (v2) 2.4절·4절·5.3절·7절·8절, `docs/설계서_Architecture.md` (v2) 2절·5절·6절·7절·9절
+- 사용 프롬프트: `docs/prompts/phase0/scope-and-common-modules-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v2.md` (v2 개정 — FR-1 bgutil 경로, FR-7 MANUAL 상수)
 - 규칙: `CLAUDE.md` 4절 1단계 산출물. 다음 산출물은 `docs/P0_설계서_Common.md`
 - 선행 검증: `docs/internal/P0_검토서_TechSpike.md` (2026-09-14 실측)
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
@@ -44,7 +44,7 @@ Phase 1~6이 공통으로 딛는 바닥을 만든다: 설정을 어디서 읽고
 | 채널 해석·탭 리스팅·메타 보충·DB 테이블(`channels`·`videos`·`analyses`)·Alembic | Phase 1 | scope 7절 |
 | 자막·오디오·Whisper·Provider 체인·Huey 작업·`jobs` 테이블 | Phase 2 | scope 7절 |
 | FastAPI 앱·라우터(`api/`) — P0는 `api/` 패키지를 만들지 않는다 | Phase 1~3 | 프롬프트 "하지 않는 것" |
-| React 화면(목록·뷰어·설정·분석 탭) | Phase 3 | scope 2.5절 |
+| React 화면(목록·뷰어·원클릭 복사·'요약 및 정리' 수동 입력·저장·설정) | Phase 3 | scope 2.5절 |
 | PyInstaller·Tauri·NSIS | Phase 4 | scope 7절 |
 | 분석기 구현(추출식·Ollama·Claude) | Phase 5 | 보류 결정 1 |
 | Capacitor | Phase 6 | scope 7절 |

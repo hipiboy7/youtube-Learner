@@ -1,7 +1,7 @@
 # Scope Definition — youtubeLearner
 
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
-- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md` (승인된 기획서), `docs/prompts/phase0/scope-and-common-modules-v1.md`
+- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md` (승인된 기획서), `docs/prompts/phase0/scope-and-common-modules-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v2.md` (v2 개정 — Direct 리뷰)
 - 선행 검증: `docs/internal/P0_검토서_TechSpike.md` (2026-09-14 실측)
 - 규칙: 이 문서는 **무엇을/왜**만 답한다. **어떻게**는 `docs/설계서_Architecture.md`, **어떤 규칙으로**는 `CLAUDE.md` (경계 규약은 설계서 0절)
 - 상태: v2 — Phase 0 Direct 리뷰 반영 (`impl-phase0`)
@@ -139,7 +139,7 @@ faster-whisper 모델(CTranslate2 변환본)을 최초 사용 시 내려받는�
 | `transcripts` | (video_id, source, language, model_name, pipeline_version) | engine, is_primary, full_text, created_at | P2 |
 | `transcript_segments` | (transcript_id, idx) | start_ms, end_ms, text | P2 |
 | `jobs` | id | type, payload, status, priority, attempts, error, progress, timestamps | P2 |
-| `analyses` | (video_id, analyzer_name, analyzer_version, kind) | content(JSON), model_info, created_at | 예약 — P1에 스키마, P5에 데이터 |
+| `analyses` | (video_id, analyzer_name, analyzer_version, kind) | content(JSON), model_info, created_at | P1 (스키마) — **P3 수동(`manual`) 데이터**, P5 자동 분석 데이터 |
 
 기록 원본(system of record)은 **SQLite** 한 파일이다. 파일 산출물(4.3절)은 원본 보존·재생성용이다.
 

@@ -1,11 +1,13 @@
 # 설계서 — Architecture
 
-- 상위 문서: `docs/scope-definition.md` (v1) 2절·4절·5절·7절·8절
-- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v1.md`
+- 상위 문서: `docs/scope-definition.md` (v2) 2절·4절·5절·7절·8절
+- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v2.md` (v2 개정)
 - 선행 검증: `docs/internal/P0_검토서_TechSpike.md`
 - 규칙: 이 문서는 **어떻게**에 답한다. Phase별 상세는 `P{N}_설계서_*`가 맡고, 이 문서는 전체 골격·경계·규약만 둔다
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
-- 상태: v1 — Phase 0 진행 중
+- 상태: v2 — Phase 0 Direct 리뷰 반영
+
+> **v2 개정 사유 (2026-09-14)**: 디스크 D: 우선 규칙 — bgutil 스크립트는 저장소 안 `tools/`(3.2절, 10절 트리). 수동 요약 흐름 v1 편입 — 4절 흐름(`[P3] analyses ◀── 사용자 붙여넣기`), 5.2절 DB·API·화면 표.
 
 ## 0. 범위 문서와의 경계 (중복 방지 규약)
 
@@ -62,7 +64,7 @@ backend/src/youtube_learner/
 │   └── run_context.py   # [P0] status/<stage>_<run_id>.json, 실행 기록              등급 A
 ├── repository/
 │   ├── db.py            # [P0] SQLite 엔진·세션 (WAL, busy_timeout, FK)              등급 B
-│   ├── schema.py        # [P1] 테이블 정의 (channels·videos·analyses 예약 …)        등급 B
+│   ├── schema.py        # [P1] 테이블 정의 (channels·videos·analyses …)              등급 B
 │   └── files.py         # [P2] 파일 산출물 경계 (captions/ audio/ whisper/)          등급 B
 ├── analysis/
 │   ├── registry.py      # [P0] 이름 → Analyzer 레지스트리                            등급 B
@@ -326,6 +328,7 @@ youtubeLearner/
 │   ├── dev.ps1                   # [P3] 백엔드+프론트 동시 기동
 │   ├── build_backend.ps1         # [P4] PyInstaller
 │   └── spike/                    # 등급 C 실측 스크립트
+├── tools/                        # 외부 도구 — bgutil PO 토큰 서버 등. 저장소 안, git 미추적, D: 우선 규칙 (CLAUDE.md 7절)
 ├── data/  status/                # 런타임 (git 미추적) — scope 4.3절
 ├── docs/                         # 제출물: scope-definition, 설계서_Architecture, P{N}_요구사항정의서/설계서/테스트결과서
 │   ├── internal/                 # SelfReview · TechSpike · 학습가이드 · 용어집 · 트러블슈팅 · 설계서_Agents · templates/ · qa/
@@ -354,3 +357,4 @@ CLAUDE.md (규칙) ── 모든 단계에 적용. 충돌 시 CLAUDE.md 우선
 | 판 | 일자 | 사유 |
 |---|---|---|
 | v1 | 2026-09-14 | 초판 — 기획서·TechSpike 반영. 모노레포·4 Protocol·분석 슬롯·CPU STT·Tauri 사이드카 |
+| v2 | 2026-09-14 | Direct 리뷰 — bgutil `tools/`(D: 우선), 수동 요약 흐름(`analyses` manual) 4·5.2절, 10절 `tools/` |

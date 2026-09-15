@@ -258,7 +258,7 @@ All checks passed!
 문서 21개 — 위반 없음   (exit 0 — 전체 목록은 5.2절)
 
 == scripts\check_env.ps1 ==
-==> READY   (WARN 1: disk 4.09 GB — 보류 결정 8)
+==> READY   (WARN 1: disk 3.90 GB — 보류 결정 8)
 
 == frontend ==
 Tests 13 passed (13) / ✓ built in 1.50s
@@ -291,7 +291,7 @@ Tests 13 passed (13) / ✓ built in 1.50s
 | 항목 | 내용 | 받는 Phase |
 |---|---|---|
 | `Settings.apply_process_env()` 호출 계약 | faster-whisper import **전에** 진입점이 호출 | P2 |
-| `Base` 빈 스키마 | 첫 테이블(`channels`·`videos`·`analyses` 예약)·Alembic 초기 리비전. `VideoStub`/`Video` ↔ ORM 변환은 저장소 계층 | P1 |
+| `Base` 빈 스키마 | 첫 테이블(`channels`·`videos`·`analyses`)·Alembic 초기 리비전. `analyses` 는 P3 수동 저장(`manual`)이 바로 쓴다. `VideoStub`/`Video` ↔ ORM 변환은 저장소 계층 | P1 |
 | `build_registry` 미구현 이름 예외 | 이름→팩토리 표로 대체 | P5 |
 | `resource_root()` frozen 분기·`.env` 탐색 위치(CWD) | 사이드카 실행 디렉토리 확인 후 `env_file` 기준 결정 | P4 |
 | `check_env` 디스크 기준 10GB(임시)·모델 캐시 위치 | P4 빌드 실측 후 갱신 (보류 결정 8) | P4 |

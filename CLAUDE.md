@@ -16,7 +16,7 @@
 - **롱/숏 판정은 탭 소속**(`/videos` vs `/shorts`)이다. 길이로 판정하지 않는다(롱폼 탭에 42초 영상 실재).
 - **스택**: Python 3.12 (`backend\.venv`), FastAPI, SQLite(WAL)+SQLAlchemy, Huey(SQLite), yt-dlp[default]+bgutil PO 토큰 제공자(Node), faster-whisper int8, React+Vite+TS → Tauri(P4) → Capacitor(P6).
 - **개발 환경(실측)**: Windows Server 2022, **물리 코어 1/논리 2**, RAM 16GB, GPU 없음, 디스크 여유 C·D 각 **5GB 미만**, Node 24, ffmpeg·Rust·gh 없음, 사내 고정 IP(프록시 없음). → STT 워커 1개·기본 모델 `small`, 모델 캐시는 `HF_HOME`으로 지정, **Phase 4 전 디스크 확보**(보류 결정 8).
-- **핵심 상수**(`constants.py`): `VideoKind = long|short|live`, `TranscriptSource = manual|auto|whisper`(+옵션 `translated`), `ORIGINAL_CAPTION_SUFFIX = "-orig"`, `LANG_PRIORITY_DEFAULT = ["ko"]`, `PIPELINE_VERSION`, DB 파일 `youtube_learner.db`.
+- **핵심 상수**(`constants.py`): `VideoKind = long|short|live`, `TranscriptSource = manual|auto|whisper`(+옵션 `translated`), `ORIGINAL_CAPTION_SUFFIX = "-orig"`, `LANG_PRIORITY_DEFAULT = ["ko"]`, `PIPELINE_VERSION`, `MANUAL_ANALYZER_NAME = "manual"`(수동 요약 출처), DB 파일 `youtube_learner.db`.
 - **자연키**: `yt_channel_id`(UC…), `yt_video_id`. 스크립트 유일성은 (video, source, language, model_name, pipeline_version).
 - **외부 서비스 3종**: YouTube(yt-dlp 경유) / bgutil PO 토큰 제공자(저장소 안 `tools/bgutil-ytdlp-pot-provider/server/build/generate_once.js` — git 미추적, Node ≥ 20) / Hugging Face Hub(모델 1회 다운로드). YouTube Data API·클라우드 STT/LLM은 쓰지 않는다.
 
@@ -27,11 +27,11 @@
 | Phase | 명칭 | 산출물 |
 |---|---|---|
 | 0 | 범위 정의 + 공통 모듈 | 상위 문서 3종, 템플릿, 에이전트/스킬, `config`/`constants`/`domain`/`exceptions`/`logging_config`/`workflow`/`repository/db`/`analysis` 슬롯 + 테스트, 프론트 스캐폴드, `check_env`·`verify_docs` |
-| 1 | 채널·영상 목록 | 채널 해석, `/videos`·`/shorts` 탭 리스팅, 증분 동기화, 메타 보충, DB 스키마(`channels`·`videos`·`analyses` 예약), API·CLI |
+| 1 | 채널·영상 목록 | 채널 해석, `/videos`·`/shorts` 탭 리스팅, 증분 동기화, 메타 보충, DB 스키마(`channels`·`videos`·`analyses`), API·CLI |
 | 2 | 스크립트 파이프라인 | Provider 체인, json3 파싱·정규화, 오디오→Whisper, Huey 큐·재시도·재개, 모델 벤치마크 |
-| 3 | 웹 UI | React 화면 일체 + 분석 탭 자리 |
+| 3 | 웹 UI | React 화면 일체 — 목록·뷰어(**원클릭 복사**)·**'요약 및 정리' 수동 입력·저장(API 포함, `analyses` manual)**·작업·설정, 자동 분석 자리 |
 | 4 | 빌드·배포 | PyInstaller onedir 사이드카 + Tauri + NSIS, 모델 최초 다운로드. **깨끗한 Windows VM 검증** |
-| 5 | 분석 플러그인 | 분석기 구현·`analyses`·화면 렌더 |
+| 5 | 분석 플러그인 | **자동** 분석기 구현(`analysis/` 안에서만), `analyses` 자동 결과, 화면에 출처(`manual`/분석기) 표시 |
 | 6 | 모바일 | Capacitor Android, 서버 URL 설정 |
 
 ### 각 Phase의 진행 순서

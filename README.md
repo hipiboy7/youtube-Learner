@@ -1,7 +1,7 @@
 # youtubeLearner
 
 유튜브 채널을 선택하면 **롱폼·숏폼 영상 목록**과 각 영상의 **전체 스크립트**(자막 → 없으면 로컬 Whisper 음성 인식)를 확보해 학습에 활용하는 프로그램.
-요약·핵심 도출은 v1 에 없고 붙일 자리(분석 슬롯)만 있다 — Phase 5.
+자동 요약·핵심 도출은 v1 에 없고 붙일 자리만 있다(Phase 5). 대신 v1 은 스크립트 **원클릭 복사**와, 사용자가 자기 AI 챗 서비스에서 받은 요약을 붙여 넣어 저장하는 **'요약 및 정리'** 를 제공한다(Phase 3).
 
 - **무엇을/왜**: [`docs/scope-definition.md`](docs/scope-definition.md)
 - **어떻게**: [`docs/설계서_Architecture.md`](docs/설계서_Architecture.md)
@@ -48,7 +48,7 @@ Node ≥ 20 이 필요하다(yt-dlp JS 런타임·bgutil·프론트 빌드). 이
 .\scripts\check_env.ps1              # 마지막 줄 ==> READY 가 나와야 작업을 시작한다
 ```
 
-READY 가 아니면 출력의 `[FAIL]` 줄이 무엇이 빠졀는지 말해준다. `[WARN]`(디스크 여유·모델 캐시 없음)은 작업을 막지 않는다.
+READY 가 아니면 출력의 `[FAIL]` 줄이 무엇이 빠졌는지 말해준다. `[WARN]`(디스크 여유 부족; 모델 캐시가 없으면 하나 더)은 작업을 막지 않는다.
 
 ---
 
@@ -85,7 +85,7 @@ backend\.venv\Scripts\python.exe scripts\verify_docs.py
 
 | Phase | 명칭 | 상태 |
 |---|---|---|
-| 0 | 범위 정의 + 공통 모듈 | 🔄 구현·테스트 완료, Direct 리뷰 대기 (`impl-phase0`) |
+| 0 | 범위 정의 + 공통 모듈 | 🔄 Direct 리뷰 중 — 1차 지시 3건(D: 우선·증설·수동 요약 흐름) 반영 완료, 병합 대기 (`impl-phase0`) |
 | 1 | 채널·영상 목록 | 예정 |
 | 2 | 스크립트 파이프라인 | 예정 |
 | 3 | 웹 UI | 예정 |
@@ -113,5 +113,6 @@ docs/                          산출물 (scope-definition · 설계서_Architec
 docs/internal/                 내부 자료 (TechSpike · SelfReview · 학습가이드 · 용어집 · 트러블슈팅 · templates/)
 docs/prompts/phase{N}/         작업 프롬프트·기획서 (요구사항 기록)
 history/                       세션별 작업 기록
+tools/                         외부 도구 — bgutil PO 토큰 서버 (git 미추적, D: 우선 규칙)
 data/ status/                  런타임 (git 미추적)
 ```
