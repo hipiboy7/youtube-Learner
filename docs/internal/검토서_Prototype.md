@@ -22,7 +22,7 @@ scope-definition v2 의 v1 기능을 **가장 얇게** 이었다. 정식 모듈 
 
 ```powershell
 .\scripts\check_env.ps1              # ==> READY
-.\scripts\dev_proto.ps1              # 백엔드 + 프론트 각각 새 창
+.\scripts\dev_proto.ps1              # PO 토큰 서버(:4416) + 백엔드(:8765) + 프론트(:5173) 각각 새 창
 ```
 
 브라우저에서 `http://localhost:5173`. 채널 입력란에 기본으로 `https://www.youtube.com/@sebasi15` 가 들어 있다 — "채널 추가·동기화" → 왼쪽 목록에서 영상 클릭 → "스크립트 가져오기" → "📋 스크립트 복사" → 외부 AI 챗에 붙여 요약을 받고 → "요약 및 정리"에 붙여 넣고 "💾 저장".
@@ -115,6 +115,17 @@ segments: 20
 | API | `GET /proto/videos/{id}` 에 `channel_title`·`yt_channel_id` 추가(머리말용) |
 
 P3 로 넘길 결정은 qa 문서에 있다(복사 3요소·기본값, 프롬프트 CRUD, 템플릿 복수 여부는 미결).
+
+## 8. 2026-09-16 — PO 토큰 상주 서버 전환과 제목 보정
+
+사용자 검증을 이어받아 재기동하던 중 자막 경로가 다시 실패했다. 원인은 어제 우회했던 것의 뿌리였다.
+
+| 발견 | 조치 | 실측 |
+|---|---|---|
+| PO 토큰 **script 모드**가 요청마다 `node generate_once.js` 를 띄운다(정상 3.1~3.8초, 제한 15초). 1코어에서 부하가 겹치면 초과 → 메타·자막 요청 전체 실패(T-007) | **상주 HTTP 서버**(`tools/bgutil-ytdlp-pot-provider/server/build/main.js`, `127.0.0.1:4416`)로 전환. `proto/yt.py` 가 `youtubepot-bgutilhttp: base_url` 명시, script 경로는 폴백. `dev_proto.ps1` 이 첫 창으로 띄우고 4416 잔존 프로세스도 정리 | 같은 영상 자막 경로 **22초 → 6초**, 타임아웃 사라짐 |
+| flat 목록의 제목이 잘려 저장되고(`… \| Byun...`) 메타 보충 때 갱신되지 않아, **복사 머리말의 제목이 잘린 채 AI 에게 전달**됨 | `fetch_transcript` 의 메타 보충에서 `meta["title"]` 로 덮어쓴다 | `A Seoul National University Engineer … \| Byun...` → `미사일 만들다 한우에 진심이 되어버린 서울대 출신 엔지니어 \| 변준원 설로인 대표 \| 한우 창업 운 \| 세바시 2132회` (원본 한국어 제목) |
+
+**P1/P2 설계 요구로 승격**: (1) PO 토큰은 상주 서버 전제 — 배포(P4)에서도 사이드카가 이 서버를 함께 띄우거나 대체 수단을 둔다. (2) `check_env` 에 `GET 4416/ping` 검사 추가(P0 코드라 이 브랜치에서는 손대지 않음). (3) 목록의 제목은 **잠정값**이고 메타 보충이 정본이다 — P1 스키마·동기화 설계에 반영.
 
 ## 6. 브랜치 처리
 

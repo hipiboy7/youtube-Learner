@@ -283,6 +283,10 @@ def fetch_transcript(yt_video_id: str, body: TranscriptIn | None = None) -> dict
             v = _get_video(session, yt_video_id)
             v.duration_s = meta.get("duration_s") or v.duration_s
             v.upload_date, v.language = meta.get("upload_date"), language
+            # flat 목록의 제목은 잘려서 온다("… | Byun..."). 영상별 메타의 전체 제목으로 덮어쓴다 —
+            # 이 제목이 복사 머리말에 들어가 AI 가 읽는다(2026-09-16 발견).
+            if meta.get("title"):
+                v.title = meta["title"]
             session.commit()
         if not force:
             picked = yt.pick_caption_track(meta, LANG_PRIORITY)

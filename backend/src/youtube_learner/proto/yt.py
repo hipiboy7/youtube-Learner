@@ -43,6 +43,11 @@ class _QuietLogger:
         self.last_warning = msg
 
 
+#: PO 토큰 상주 서버(bgutil HTTP 모드). script 모드는 요청마다 Node 를 띄워 1코어 VM 에서 15초 제한을 넘긴다(T-007).
+#: 상주 서버가 떠 있으면 yt-dlp 가 HTTP 제공자를 먼저 써서 Node 기동 비용이 사라진다. 없으면 script 모드로 내려간다.
+BGUTIL_HTTP_BASE_URL = "http://127.0.0.1:4416"
+
+
 def _opts(settings: Settings, **extra: Any) -> dict[str, Any]:
     opts: dict[str, Any] = {
         "quiet": True,
@@ -50,7 +55,10 @@ def _opts(settings: Settings, **extra: Any) -> dict[str, Any]:
         "noprogress": True,
         "logger": _QuietLogger(),
         "js_runtimes": {settings.ytdlp_js_runtime: {}},
-        "extractor_args": {"youtubepot-bgutilscript": {"script_path": [str(settings.bgutil_script_path)]}},
+        "extractor_args": {
+            "youtubepot-bgutilhttp": {"base_url": [BGUTIL_HTTP_BASE_URL]},
+            "youtubepot-bgutilscript": {"script_path": [str(settings.bgutil_script_path)]},
+        },
         "sleep_interval_requests": 1,
     }
     opts.update(extra)
