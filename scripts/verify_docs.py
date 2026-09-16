@@ -39,16 +39,19 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 VENV_PYTHON = ROOT / "backend" / ".venv" / "Scripts" / "python.exe"
 
-#: 검사 대상. docs/prompts 는 요구사항 기록(고치지 않고 v2 를 만든다), history 는 사후 수정 금지 기록 → 제외.
-DOC_GLOBS = ("README.md", "CLAUDE.md", "docs/*.md", "docs/internal/*.md", "docs/internal/templates/*.md")
-SKIP_DIRS = ("docs/prompts",)
+#: 검사 대상. history/ 는 사후 수정 금지 기록이라 검사하지 않는다(글롭에 넣지 않는 것으로 제외된다).
+DOC_GLOBS = (
+    "README.md", "CLAUDE.md", "docs/*.md",
+    "docs/internal/*.md", "docs/internal/templates/*.md", "docs/internal/qa/*.md",
+)
 
 #: 저장소 경로로 취급할 접두. 이 밖(패키지 상대 표기 `domain/models.py`, 축약 표기)은 의도가 여러 가지라 판정하지 않는다.
 REPO_PREFIXES = ("backend/", "frontend/", "scripts/", "docs/", ".claude/", "history/", "desktop/", "mobile/")
 #: 런타임 산출물 — 새 clone 에 없는 것이 정상이다.
 RUNTIME_PREFIXES = ("data/", "status/")
 #: 환경·빌드 산출물 디렉토리 — git 미추적이라 실재 검사 대상이 아니다.
-IGNORED_SUBSTRINGS = ("/.venv/", "/node_modules/", "/dist/", "/build/", "/__pycache__/", "/coverage/")
+#: 조각 단위로 본다("backend/.venv" 처럼 끝에 오는 경우도 잡으려면 접두/접미 슬래시로는 부족하다 — 2026-09-16 오탐 3건).
+IGNORED_SEGMENTS = frozenset({".venv", "node_modules", "dist", "build", "__pycache__", "coverage", ".git"})
 #: 생성 산출물 확장자.
 GENERATED_EXTS = (".db", ".db-wal", ".db-shm", ".sqlite", ".m4a", ".json3", ".parquet", ".pkl", ".log")
 #: 이 문자가 있으면 경로가 아니라 패턴·자리표시자·변수다.
@@ -100,7 +103,7 @@ def target_docs(explicit: str | None) -> list[Path]:
     docs: list[Path] = []
     for pattern in DOC_GLOBS:
         docs.extend(sorted(ROOT.glob(pattern)))
-    return [d for d in docs if not any(d.relative_to(ROOT).as_posix().startswith(s) for s in SKIP_DIRS)]
+    return docs
 
 
 def normalize_path_token(token: str) -> str:
@@ -248,7 +251,7 @@ def _skip_candidate(candidate: str) -> bool:
         return True
     if candidate.startswith(RUNTIME_PREFIXES):
         return True
-    if any(sub in f"/{candidate}" for sub in IGNORED_SUBSTRINGS):
+    if IGNORED_SEGMENTS & set(candidate.split("/")):
         return True
     return candidate.endswith(GENERATED_EXTS)
 

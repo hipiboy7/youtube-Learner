@@ -3,7 +3,7 @@
 - 독자: 컴퓨터공학 학부 졸업 수준, 이 프로젝트를 처음 보는 사람 (`docs/internal/용어집.md` 기준)
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
 - 규칙: `CLAUDE.md` 1절 7단계. 내부 자료(9절 경계). 실습은 **사본 디렉토리**에서만 — 실제 `data/`·DB 를 건드리지 않는다
-- 대응 산출물: `docs/P0_요구사항정의서_Common.md`, `docs/P0_설계서_Common.md`, `docs/P0_테스트결과서_Common.md`
+- 대응 산출물: `docs/P0_설계서_Common.md`, `docs/P0_설계서_Common.md`, `docs/internal/P0_실측기록_Common.md`
 
 > 목적은 담당자가 Phase 0 산출물을 **스스로 재현하고 설명**할 수 있게 하는 것이다. 코드를 다시 설명하는 문서가 아니다 —
 > "무엇을 왜 그렇게 만들었나"와 "직접 확인하는 방법"이 중심이다.
@@ -159,7 +159,7 @@ Remove-Item -Recurse -Force $lab
 
 ## 5. 자체 점검에서 찾은 내 실수
 
-`docs/internal/P0_검토서_SelfReview.md` 1절. 요약: 설계서 시그니처와 구현이 어긋난 곳 2건(`run_context(run_id=)`, `make_engine` 의 디렉토리 생성)은 **구현이 맞고 문서가 뒤처진** 경우였다 — 코드를 고치며 문서를 같이 고치지 않으면 생기는 전형. 구조적 원인: 설계서를 쓴 뒤 테스트를 쓰다가 필요(결정적 run_id)가 드러났고, 그 자리에서 설계서로 돌아가지 않았다.
+`docs/internal/P0_실측기록_Common.md` 1절. 요약: 설계서 시그니처와 구현이 어긋난 곳 2건(`run_context(run_id=)`, `make_engine` 의 디렉토리 생성)은 **구현이 맞고 문서가 뒤처진** 경우였다 — 코드를 고치며 문서를 같이 고치지 않으면 생기는 전형. 구조적 원인: 설계서를 쓴 뒤 테스트를 쓰다가 필요(결정적 run_id)가 드러났고, 그 자리에서 설계서로 돌아가지 않았다.
 
 ## 6. 리뷰에서 나올 수 있는 질문과 답
 
@@ -186,10 +186,10 @@ A. 등급 A 모듈은 **거부 케이스가 필수**다(`CLAUDE.md` 3절). `test
 1. `CLAUDE.md` 0절·1절 — 요약과 보류 결정 8건
 2. `docs/scope-definition.md` 2절(기능)·5절(스크립트 전략)·8절(환경)
 3. `docs/설계서_Architecture.md` 2절(모듈·DIP)·4절(데이터 흐름)
-4. `docs/internal/P0_검토서_TechSpike.md` 3절·4절 — 실측과 "달랐던 것"
-5. `docs/P0_요구사항정의서_Common.md` 4절 FR → `docs/P0_설계서_Common.md` 같은 번호 절의 "설계 판단"
+4. `docs/internal/P0_실측기록_Common.md` 3절·4절 — 실측과 "달랐던 것"
+5. `docs/P0_설계서_Common.md` 4절 FR → `docs/P0_설계서_Common.md` 같은 번호 절의 "설계 판단"
 6. 코드 — 모듈 docstring 첫 줄이 설계서 절과 FR 을 가리킨다. `domain/models.py` → `config.py` → `workflow/run_context.py` 순
-7. `docs/P0_테스트결과서_Common.md` 3절(커버리지)·4절(FR 대조)·6절(재작업)
+7. `docs/internal/P0_실측기록_Common.md` 3절(커버리지)·4절(FR 대조)·6절(재작업)
 
 ## 8. 다음 Phase 로 넘어갈 때 기억할 것
 

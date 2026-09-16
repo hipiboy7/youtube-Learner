@@ -1,13 +1,16 @@
 # 설계서 — Architecture
 
-- 상위 문서: `docs/scope-definition.md` (v2) 2절·4절·5절·7절·8절
-- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v2.md` (v2 개정)
-- 선행 검증: `docs/internal/P0_검토서_TechSpike.md`
+- 상위 문서: `docs/scope-definition.md` (v3) 2절·4절·5절·7절·8절
+- 요구 원문·결정: `docs/internal/qa/P0_질의응답_초기요구.md`
+- 실측 근거: `docs/internal/P0_실측기록_Common.md`, `docs/internal/검토서_Prototype.md`
 - 규칙: 이 문서는 **어떻게**에 답한다. Phase별 상세는 `P{N}_설계서_*`가 맡고, 이 문서는 전체 골격·경계·규약만 둔다
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
-- 상태: v2 — Phase 0 Direct 리뷰 반영
+- 상태: v3 — 방법론 v2 반영 (2026-09-16)
 
 > **v2 개정 사유 (2026-09-14)**: 디스크 D: 우선 규칙 — bgutil 스크립트는 저장소 안 `tools/`(3.2절, 10절 트리). 수동 요약 흐름 v1 편입 — 4절 흐름(`[P3] analyses ◀── 사용자 붙여넣기`), 5.2절 DB·API·화면 표.
+
+> **v3 개정 사유 (2026-09-16)**: 방법론 v2 — Phase 당 문서 3개(설계서·실측기록·학습가이드), 단일 출처 규칙(`CLAUDE.md` 5절).
+> 실측 참조를 통합 문서로 바꾸고, PO 토큰을 상주 HTTP 서버 기준으로 정정했다(T-007). 결정: `docs/internal/qa/질의응답_방법론개정.md`
 
 ## 0. 범위 문서와의 경계 (중복 방지 규약)
 
@@ -191,17 +194,14 @@ class Analyzer(Protocol):             # NullAnalyzer(v1) ↔ Extractive / Ollama
 
 ## 5. STT·분석 슬롯 설계
 
-### 5.1 STT 설정 (`backend/config/stt_default.json`)
+### 5.1 STT 설정
 
-| 키 | 기본값 | 근거 |
-|---|---|---|
-| `model` | `small` | 코어 1개에서 3.05x. 보류 결정 2로 재확정 |
-| `presets` | `small` / `medium` / `large-v3-turbo` | 사용자 선택 |
-| `compute_type` | `int8` | CPU |
-| `cpu_threads` | 논리 코어 수(`.env` `STT_CPU_THREADS` 우선) | 실측 2 |
-| `vad_filter` | `true` | 무음 제거 |
-| `beam_size` | `1` | 속도 우선. 정확도 비교는 P2 |
-| `condition_on_previous_text` | `false` | 반복 환각 억제 |
+**값은 `backend/config/stt_default.json` 이 단일 출처다** — 키마다 `_comment` 에 근거가 있고, 이 문서는 값을 옮겨 적지 않는다(`CLAUDE.md` 5절).
+설계 판단만 여기 둔다.
+
+- **왜 설정 파일인가** — 모델·스레드·VAD·beam 은 환경과 품질 요구에 따라 바뀐다. 코드 수정 없이 조절해야 벤치마크(P2)를 돌릴 수 있다.
+- **왜 `cpu_threads` 기본이 비어 있나** — 비어 있으면 `.env` `STT_CPU_THREADS`(없으면 논리 코어 수)를 따른다. 다른 PC 로 옮겼을 때 파일을 고치지 않아도 맞는 값이 쓰인다.
+- **왜 모델을 하나로 고정하지 않나** — 속도와 정확도가 환경에 따라 역전된다(실측기록 4절). `presets` 로 사용자가 고르게 하고 기본값만 보수적으로 둔다.
 
 ### 5.2 분석 슬롯
 
@@ -341,7 +341,7 @@ youtubeLearner/
 ## 11. 문서 간 추적성
 
 ```
-docs/prompts/phase0/project-plan-v1.md (기획서, 승인)
+docs/internal/qa/P0_질의응답_초기요구.md (기획서, 승인)
    └─▶ docs/scope-definition.md (무엇을/왜)
           └─▶ docs/설계서_Architecture.md (어떻게 — 이 문서)
                  └─▶ docs/P{N}_요구사항정의서_*.md (FR-…)  ◀─ docs/internal/P{N}_검토서_TechSpike.md (실측)

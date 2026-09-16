@@ -36,12 +36,13 @@ class TestRepository:
         if proc.returncode != 0:
             pytest.fail(f"문서 검증 실패\n\n{proc.stdout}\n{proc.stderr}")
 
-    def test_prompts_and_history_are_not_checked(self):
-        """FR-28 — 요구사항 기록·세션 기록은 고치지 않으므로 검사하지 않는다."""
+    def test_history_is_not_checked_but_qa_is(self):
+        """FR-28 — history/ 는 사후 수정 금지 기록이라 검사하지 않고, qa/(요청 원문·결정)는 검사한다."""
         targets = {d.relative_to(ROOT).as_posix() for d in verify_docs.target_docs(None)}
-        assert not any(t.startswith("docs/prompts") or t.startswith("history/") for t in targets)
+        assert not any(t.startswith("history/") for t in targets)
         assert "CLAUDE.md" in targets and "docs/scope-definition.md" in targets
         assert any(t.startswith("docs/internal/templates/") for t in targets)
+        assert any(t.startswith("docs/internal/qa/") for t in targets)
 
 
 class TestVenvCheck:
