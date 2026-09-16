@@ -1,7 +1,7 @@
 """환경 검사 — 대응: docs/P0_설계서_Common.md 10절 (FR-26). 등급 B.
 
 Trigger: 매 세션·매 Phase 시작에 수동 (scripts\\check_env.ps1 → 이 모듈). CLAUDE.md 1절 0단계.
-Input : .env (config.Settings). 네트워크 호출 없음.
+Input : .env (config.Settings). 외부 네트워크 호출은 없다 — PO 토큰 서버 검사만 루프백(127.0.0.1)을 1초 두드린다.
 Output: stdout 에 `[OK]|[WARN]|[FAIL] <항목> — <실측>` 줄들 + 마지막 줄 `==> READY` (종료 0) 또는
         `==> NOT READY (<n> failures)` (종료 1). --json 은 항목 배열, --strict 는 WARN 도 실패.
 ⚠️ 사전 조건: backend\\.venv 의 python 으로 실행 (3.12). 시스템 python(3.14) 은 패키지가 없다.
@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from enum import StrEnum
@@ -122,6 +123,37 @@ def check_bgutil_script(settings: Settings) -> CheckResult:
     return CheckResult("bgutil script", Level.FAIL, f"없음: {path} — {BGUTIL_BUILD_HINT}")
 
 
+#: 상주 PO 토큰 서버를 띄우는 명령 (tools/ 안 빌드 산출물 — T-001·T-007).
+BGUTIL_SERVE_HINT = "node tools\\bgutil-ytdlp-pot-provider\\server\\build\\main.js (scripts\\dev.ps1 이 첫 창으로 띄운다)"
+PING_TIMEOUT_S = 1.0
+
+
+def check_pot_server(
+    settings: Settings,
+    urlopen: Callable[..., Any] | None = None,
+) -> CheckResult:
+    """PO 토큰 상주 서버(`GET <base_url>/ping`) 가 응답하는가. 등급 B.
+
+    왜 FAIL 이 아니라 WARN 인가 — 이 서버는 `scripts\\dev.ps1` 이 띄운다. check_env 는 그 **전에** 돌리는
+    것이 정상이므로 꺼져 있는 것이 곧 결함은 아니다. 다만 꺼진 채로 자막을 요청하면 script 모드로 내려가
+    요청마다 Node 를 띄우고 1코어에서 15초 제한을 넘겨 "코드 문제"로 오진하게 된다(T-007). 그래서 조용히
+    넘기지 않고 띄우는 명령까지 같이 보여 준다. `--strict` 면 실패로 본다.
+    """
+    if not settings.bgutil_http_enabled:
+        return CheckResult("pot server", Level.WARN, "BGUTIL_HTTP_ENABLED=false — script 모드로 동작한다 (요청마다 Node 기동, T-007)")
+    opener = urlopen or urllib.request.urlopen
+    url = f"{settings.bgutil_http_base_url.rstrip('/')}/ping"
+    try:
+        with opener(url, timeout=PING_TIMEOUT_S) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:  # noqa: BLE001 — URLError·ConnectionRefused·타임아웃·JSON 오류를 한 줄로 보고한다
+        return CheckResult("pot server", Level.WARN, f"{url} 응답 없음 ({type(exc).__name__}) — {BGUTIL_SERVE_HINT}")
+    version = payload.get("version", "?")
+    uptime = payload.get("server_uptime")
+    uptime_text = f", uptime {float(uptime):.0f}s" if isinstance(uptime, (int, float)) else ""
+    return CheckResult("pot server", Level.OK, f"{url} — bgutil {version}{uptime_text}")
+
+
 def check_dirs(settings: Settings) -> CheckResult:
     try:
         settings.ensure_dirs()
@@ -187,6 +219,7 @@ def run_checks(
     results.extend(check_imports())
     results.append(check_node(which=which, run=run))
     results.append(check_bgutil_script(settings))
+    results.append(check_pot_server(settings))
     results.append(check_dirs(settings))
     results.append(check_disk(settings, disk_usage=disk_usage))
     results.extend(check_config_files(settings))

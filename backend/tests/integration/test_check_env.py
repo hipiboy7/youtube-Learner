@@ -82,6 +82,52 @@ class TestBgutil:
         assert ce.check_bgutil_script(s).level is ce.Level.OK
 
 
+class TestPotServer:
+    """FR-102 — PO 토큰 상주 서버 검사. 꺼져 있으면 WARN + 띄우는 명령 (T-007)."""
+
+    class _FakeResponse:
+        def __init__(self, payload: bytes) -> None:
+            self._payload = payload
+
+        def read(self) -> bytes:
+            return self._payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    def test_ok_when_server_answers_ping(self, tmp_settings: Settings):
+        payload = json.dumps({"version": "2.0.0", "server_uptime": 41.7}).encode("utf-8")
+        r = ce.check_pot_server(tmp_settings, urlopen=lambda url, timeout: self._FakeResponse(payload))
+        assert r.level is ce.Level.OK and "bgutil 2.0.0" in r.detail and "uptime 42s" in r.detail
+
+    def test_warns_with_serve_hint_when_refused(self, tmp_settings: Settings):
+        def refuse(url: str, timeout: float):
+            raise ConnectionRefusedError("대상 컴퓨터에서 거부했으므로 연결하지 못했습니다")
+
+        r = ce.check_pot_server(tmp_settings, urlopen=refuse)
+        assert r.level is ce.Level.WARN and "main.js" in r.detail and "/ping" in r.detail
+
+    def test_warns_when_http_disabled(self, tmp_settings: Settings):
+        """거부 케이스 — 끄는 것도 조용히 넘기지 않는다. script 모드의 대가를 알려 준다."""
+        s = tmp_settings.model_copy(update={"bgutil_http_enabled": False})
+        r = ce.check_pot_server(s, urlopen=lambda *a, **k: pytest.fail("꺼져 있으면 두드리지 않아야 한다"))
+        assert r.level is ce.Level.WARN and "T-007" in r.detail
+
+    def test_uses_configured_base_url(self, tmp_settings: Settings):
+        seen: list[str] = []
+
+        def capture(url: str, timeout: float):
+            seen.append(url)
+            return self._FakeResponse(b'{"version":"x"}')
+
+        s = tmp_settings.model_copy(update={"bgutil_http_base_url": "http://127.0.0.1:9999/"})
+        ce.check_pot_server(s, urlopen=capture)
+        assert seen == ["http://127.0.0.1:9999/ping"]
+
+
 class TestDirsDiskConfigModels:
     def test_dirs_ok_and_created(self, tmp_settings: Settings):
         r = ce.check_dirs(tmp_settings)

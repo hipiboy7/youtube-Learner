@@ -234,3 +234,38 @@ class TestHelpersAndMain:
         code = verify_docs.main(["--path", "CLAUDE.md"])
         out = capsys.readouterr().out
         assert code == 0 and "위반 없음" in out
+
+
+class TestTrackedFiles:
+    """T-008 역테스트 — git 출력 디코딩이 깨지면 "추적 파일 0건"으로 조용히 넘어갔다."""
+
+    def test_korean_paths_are_decoded(self):
+        """`core.quotepath=false` 인 이 저장소에서 한글 경로가 그대로 읽혀야 한다.
+
+        로케일(cp1252) 디코딩이면 예외가 리더 스레드에서 터지고 stdout 이 None 이 되는데 종료 코드는 0 이라
+        검사기가 통과해 버린다. 한글 문서가 목록에 있으면 utf-8 로 읽혔다는 뜻이다.
+        """
+        verify_docs._tracked_cache = None
+        tracked = verify_docs.tracked_files()
+        assert "docs/scope-definition.md" in tracked
+        assert "docs/설계서_Architecture.md" in tracked
+
+
+class TestPs1Encoding:
+    """T-005 역테스트 — 한글이 든 BOM 없는 .ps1 은 PowerShell 5.1 에서 실행 자체가 안 된다."""
+
+    def test_repository_ps1_files_all_have_bom(self):
+        assert verify_docs.check_ps1_encoding() == []
+
+    def test_detects_korean_ps1_without_bom(self, tmp_path: Path):
+        (tmp_path / "bad.ps1").write_bytes("Write-Host '프론트'\n".encode())
+        assert kinds(verify_docs.check_ps1_encoding(tmp_path)) == {"ps1-bom"}
+
+    def test_accepts_korean_ps1_with_bom(self, tmp_path: Path):
+        (tmp_path / "ok.ps1").write_bytes(verify_docs.UTF8_BOM + "Write-Host '프론트'\n".encode())
+        assert verify_docs.check_ps1_encoding(tmp_path) == []
+
+    def test_accepts_ascii_only_ps1_without_bom(self, tmp_path: Path):
+        """오탐 방지 — ASCII 전용이면 코드페이지와 무관하게 같게 읽힌다."""
+        (tmp_path / "ascii.ps1").write_bytes(b"Write-Host 'ok'\n")
+        assert verify_docs.check_ps1_encoding(tmp_path) == []

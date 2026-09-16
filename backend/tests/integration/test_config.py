@@ -22,7 +22,9 @@ class TestDefaults:
         assert tmp_settings.api_host == "127.0.0.1" and tmp_settings.api_port == 8765
         assert tmp_settings.cors_origins == ["http://localhost:5173", "http://127.0.0.1:5173"]
         assert tmp_settings.ytdlp_js_runtime == "node"
-        assert tmp_settings.bgutil_http_enabled is False
+        # 2026-09-16 정정 — 기본값 True. script 모드는 요청마다 Node 를 띄워 1코어에서 15초 제한을 넘겼다 (T-007)
+        assert tmp_settings.bgutil_http_enabled is True
+        assert tmp_settings.bgutil_http_base_url == "http://127.0.0.1:4416"
         assert tmp_settings.stt_cpu_threads == (os.cpu_count() or 1)
         assert tmp_settings.analyzers == []
         assert tmp_settings.disk_free_warn_gb == 10

@@ -71,7 +71,10 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=lambda: list(_DEFAULT_CORS))
     ytdlp_js_runtime: str = "node"
     bgutil_script_path: Path = Field(default_factory=_default_bgutil_script)
-    bgutil_http_enabled: bool = False
+    #: 2026-09-16 정정 — 기본값을 False 에서 True 로 바꿨다. script 모드는 요청마다 Node 를 띄워 1코어에서
+    #: 15초 제한을 넘겼다(T-007). 상주 HTTP 서버를 전제로 하고, 서버가 없으면 yt-dlp 가 script 모드로 내려간다.
+    bgutil_http_enabled: bool = True
+    bgutil_http_base_url: str = "http://127.0.0.1:4416"
     stt_cpu_threads: int = Field(default_factory=lambda: os.cpu_count() or 1, ge=1)
     analyzers: Annotated[list[str], NoDecode] = Field(default_factory=list)
     disk_free_warn_gb: float = Field(default=10, ge=0)

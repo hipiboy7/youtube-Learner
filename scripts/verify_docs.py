@@ -18,6 +18,7 @@
 5. link       마크다운 상대 링크가 실제 파일을 가리키는가
 6. table      표 중간 빈 줄로 표가 쪼개지지 않았는가
 7. bare-path  백틱 안 저장소 경로가 실재하는가
+8. ps1-bom    한글이 든 .ps1 이 UTF-8 BOM 으로 저장돼 있는가 (T-005)
 
 사용법
 -----
@@ -175,11 +176,19 @@ _tracked_cache: set[str] | None = None
 
 
 def tracked_files() -> set[str]:
-    """git 이 추적하는 파일 목록. 추적되는데 디스크에 없으면 작업 트리가 어긋난 것이라 반드시 알린다."""
+    """git 이 추적하는 파일 목록. 추적되는데 디스크에 없으면 작업 트리가 어긋난 것이라 반드시 알린다.
+
+    인코딩을 utf-8 로 못 박는다 — `text=True` 만 쓰면 로케일(Windows cp1252)로 디코딩한다.
+    이 저장소는 `core.quotepath=false` 라 한글 문서 경로가 UTF-8 원문으로 나오고, 그때 디코딩이 터지면
+    subprocess 가 stdout 을 None 으로 남기면서도 종료 코드는 0 이라 "추적 파일 0건"으로 조용히 넘어간다(T-008).
+    """
     global _tracked_cache
     if _tracked_cache is None:
-        proc = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=False)
-        _tracked_cache = set(proc.stdout.splitlines()) if proc.returncode == 0 else set()
+        proc = subprocess.run(
+            ["git", "ls-files"], cwd=ROOT, capture_output=True,
+            encoding="utf-8", errors="replace", check=False,
+        )
+        _tracked_cache = set((proc.stdout or "").splitlines()) if proc.returncode == 0 else set()
     return _tracked_cache
 
 
@@ -377,6 +386,36 @@ def check_bare_paths(doc: Path, text: str) -> list[Finding]:
     return findings
 
 
+# ── 검사 8: .ps1 인코딩 (문서 단위가 아니라 저장소 단위) ─────────────────────
+
+#: UTF-8 BOM. PowerShell 5.1 은 BOM 없는 파일을 ANSI 코드페이지(한국어 Windows = CP949)로 읽는다.
+UTF8_BOM = bytes((0xEF, 0xBB, 0xBF))
+
+
+def check_ps1_encoding(root: Path | None = None) -> list[Finding]:
+    """한글이 든 `.ps1` 은 UTF-8 BOM 이어야 한다. `root` 는 테스트가 임시 디렉토리를 주기 위한 것.
+
+    왜 — PowerShell 5.1(Windows Server 2022 기본)은 BOM 없는 UTF-8 을 ANSI 로 읽는다. 그래서 주석·출력문의
+    한글이 깨지고, 깨진 바이트가 파서를 만나면 스크립트가 **실행 자체를 못 한다**. 사용자가 먼저 본 실패가
+    이것이다(T-005: `dev_proto.ps1:14 char:121 + ... í"„ë¡ íŠ¸`). 작성자 편집기에서는 안 보인다.
+    """
+    base = root if root is not None else ROOT
+    findings: list[Finding] = []
+    for path in sorted(base.rglob("*.ps1")):
+        relative = path.relative_to(base).as_posix()
+        if IGNORED_SEGMENTS & set(relative.split("/")):
+            continue
+        raw = path.read_bytes()
+        if raw.startswith(UTF8_BOM):
+            continue
+        if raw.isascii():
+            continue  # ASCII 전용이면 코드페이지와 무관하게 같게 읽힌다
+        findings.append(
+            Finding(path, 1, "ps1-bom", "한글이 든 .ps1 인데 UTF-8 BOM 이 없다 — PowerShell 5.1 이 CP949 로 읽어 깨진다 (T-005)")
+        )
+    return findings
+
+
 # ── 실행 ─────────────────────────────────────────────────────────────────────
 
 def verify(doc: Path) -> list[Finding]:
@@ -399,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     docs = target_docs(args.path)
-    all_findings: list[Finding] = []
+    all_findings: list[Finding] = [] if args.path else check_ps1_encoding()
     for doc in docs:
         if not doc.is_file():
             all_findings.append(Finding(doc, 0, "missing", "문서가 없다"))

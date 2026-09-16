@@ -721,27 +721,6 @@ frontend/
 | 11 | `frontend/` 스캐폴드 → `time.test.ts` 먼저 → `time.ts` → `api.ts` | A / B | 예 / 아니오 | `npm test`·`npm run build` |
 | 12 | 커버리지 측정 → `docs/internal/P0_실측기록_Common.md` | — | — | 테스트결과서 |
 
-## 20. ⚠️ 다음 Phase 인계
-
-| 항목 | 내용 | 받는 Phase |
-|---|---|---|
-| `Settings.apply_process_env()` 호출 계약 | faster-whisper import **전에** 진입점이 호출 | P2 |
-| `resource_root()` frozen 분기 | `sys.frozen`/`_MEIPASS` 처리 자리만 있음 — 실제 검증은 패키징 시 | P4 |
-| `Base` 빈 스키마 | 첫 테이블(`channels`·`videos`·`analyses`)과 Alembic 초기 리비전 | P1 |
-| `build_registry` 미구현 이름 예외 | 이름→팩토리 표로 대체 | P5 |
-| `check_env` 디스크 기준 10GB 임시 | P4 빌드 실측 후 갱신 | P4 |
-| `VideoStub`/`Video` ↔ ORM 변환 함수 | 저장소 계층에 둔다 | P1 |
-
-## 21. 관련 문서
-
-| 문서 | 관계 |
-|---|---|
-| `docs/P0_설계서_Common.md` | 상위 — FR 정의 |
-| `docs/설계서_Architecture.md` 2절·5절·6절·7절·9절 | 상위 — 전체 골격·DIP 경계·규약 |
-| `docs/internal/P0_실측기록_Common.md` | 근거 — 실측(원어 트랙, bgutil, HF 캐시, 코어 수) |
-| `docs/internal/검토서_트러블슈팅.md` T-001·T-002 | 근거 — `check_env` 항목, `HF_HOME` 기본값 |
-| `docs/internal/templates/README.md` | 문서 규약 |
-
 ## 20. 비기능 요구사항
 
 | 항목 | 기준 |
@@ -804,3 +783,24 @@ frontend/
 |---|---|---|---|
 | `check_env` 디스크 경고 기준값(임시 10GB) | P4 빌드 요구 용량 미측정 | P4 프롬프트 | P4 빌드 산출물 크기 실측 → `DISK_FREE_WARN_GB` 갱신 (보류 결정 8에 흡수) |
 | 로그 파일 출력(현재 stdout만) | 데스크톱 앱에서 로그를 어디에 남길지는 P4 사이드카 설계에 종속 | P4 | 사이드카 stdout 캡처 방식 확정 후 `LOG_FILE` 키 추가 여부 |
+
+## 25. ⚠️ 다음 Phase 인계
+
+| 항목 | 내용 | 받는 Phase |
+|---|---|---|
+| `Settings.apply_process_env()` 호출 계약 | faster-whisper import **전에** 진입점이 호출 | P2 |
+| `resource_root()` frozen 분기 | `sys.frozen`/`_MEIPASS` 처리 자리만 있음 — 실제 검증은 패키징 시 | P4 |
+| `Base` 빈 스키마 | 첫 테이블(`channels`·`videos`·`analyses`)과 Alembic 초기 리비전 | P1 |
+| `build_registry` 미구현 이름 예외 | 이름→팩토리 표로 대체 | P5 |
+| `check_env` 디스크 기준 10GB 임시 | P4 빌드 실측 후 갱신 | P4 |
+| `VideoStub`/`Video` ↔ ORM 변환 함수 | 저장소 계층에 둔다 | P1 |
+
+## 26. 관련 문서
+
+| 문서 | 관계 |
+|---|---|
+| `docs/P0_설계서_Common.md` | 상위 — FR 정의 |
+| `docs/설계서_Architecture.md` 2절·5절·6절·7절·9절 | 상위 — 전체 골격·DIP 경계·규약 |
+| `docs/internal/P0_실측기록_Common.md` | 근거 — 실측(원어 트랙, bgutil, HF 캐시, 코어 수) |
+| `docs/internal/검토서_트러블슈팅.md` T-001·T-002 | 근거 — `check_env` 항목, `HF_HOME` 기본값 |
+| `docs/internal/templates/README.md` | 문서 규약 |
