@@ -1,11 +1,13 @@
 # Scope Definition — youtubeLearner
 
 - 작성일: 2026-09-14 / 작성 LLM: Fable 5.1
-- 사용 프롬프트: `docs/prompts/phase0/project-plan-v1.md` (승인된 기획서), `docs/prompts/phase0/scope-and-common-modules-v1.md`, `docs/prompts/phase0/scope-and-common-modules-v2.md` (v2 개정 — Direct 리뷰)
-- 선행 검증: `docs/internal/P0_검토서_TechSpike.md` (2026-09-14 실측)
+- 요구 원문·결정: `docs/internal/qa/P0_질의응답_초기요구.md`
+- 실측 근거: `docs/internal/P0_실측기록_Common.md`, `docs/internal/검토서_Prototype.md`
 - 규칙: 이 문서는 **무엇을/왜**만 답한다. **어떻게**는 `docs/설계서_Architecture.md`, **어떤 규칙으로**는 `CLAUDE.md` (경계 규약은 설계서 0절)
-- 상태: v2 — Phase 0 Direct 리뷰 반영 (`impl-phase0`)
+- 상태: v3 — 방법론 v2 반영 (2026-09-16)
 
+> **v3 개정 사유 (2026-09-16)**: 방법론 v2 — Phase 당 문서 3개(설계서·실측기록·학습가이드), 단일 출처 규칙, Phase 1~3 은 프로토타입을 정식 구조로 이관. 7절 로드맵과 10절 작업 원칙을 고쳤다. 실측 근거 링크는 통합된 `P0_실측기록_Common.md` 로 바뀌었다. 결정: `docs/internal/qa/질의응답_방법론개정.md`
+>
 > **v2 개정 사유 (2026-09-14)**: 사용자 Direct 리뷰 — (1) 로컬 디스크 **D: 우선** 규칙, 부족하면 D: 증설(8.1절, `CLAUDE.md` 7절). (2) v1 에 **수동 요약 흐름** 추가: 스크립트 원클릭 복사 + 외부 AI 챗 서비스에서 받은 요약·정리를 붙여 넣어 저장하는 '요약 및 정리' 메뉴(1·2.3·2.4·2.5·6·7·9절). 자동 분석기(P5)는 그대로 미룬다.
 
 ## 1. 프로젝트 개요
@@ -29,7 +31,7 @@
 | 채널 ID / 채널 URL | `UCgheNMc3gGHLsT-RISdCzDQ`, `/channel/UC…` | 그대로 사용 |
 | 영상 URL | `https://www.youtube.com/watch?v=…` | 영상의 채널로 해석 (P1에서 지원 여부 확정) |
 
-채널의 **정체성은 `yt_channel_id`(UC…)** 다. 핸들은 바뀔 수 있으므로 표시용으로만 저장한다 (TechSpike 3.1절: flat 목록 응답에 `channel_id`가 온다).
+채널의 **정체성은 `yt_channel_id`(UC…)** 다. 핸들은 바뀔 수 있으므로 표시용으로만 저장한다 (실측기록 4절: flat 목록 응답에 `channel_id`가 온다).
 
 ### 2.2 영상 목록 — 롱폼과 숏폼을 분리
 
@@ -39,9 +41,9 @@
 | 숏폼 (`short`) | 채널 **Shorts 탭** (`/@handle/shorts`) | 탭 소속 |
 | 라이브 (`live`) | Streams 탭 (`/streams`) | v1 목록 대상 아님 — 값만 예약 (9절) |
 
-**길이로 판정하지 않는다.** 롱폼 탭에 42초 영상이 실재하고(TechSpike 3.1절) 숏폼은 최대 3분까지 올라온다. 두 탭에 같은 영상이 나오는 사례는 상위 60건 기준 0건이었다 — 전량에서 겹침이 나오면 P1에서 규칙을 정한다.
+**길이로 판정하지 않는다.** 롱폼 탭에 42초 영상이 실재하고(실측기록 4절) 숏폼은 최대 3분까지 올라온다. 두 탭에 같은 영상이 나오는 사례는 상위 60건 기준 0건이었다 — 전량에서 겹침이 나오면 P1에서 규칙을 정한다.
 
-목록은 두 단계로 얻는다 (TechSpike 3.1·3.2절):
+목록은 두 단계로 얻는다 (실측기록 4절):
 
 1. **flat 목록** — 탭당 한 번의 페이지 순회. `id`·`title`·`thumbnails`·`view_count`·(롱폼만)`duration`. 60건에 2.4초.
 2. **영상별 메타 보충** — flat에 없는 `duration`(숏폼)·`upload_date`·`language`·`live_status`·자막 트랙 목록. 영상당 1회 요청. **증분**으로 한다(이미 보충된 영상은 건너뜀).
@@ -92,7 +94,7 @@
 
 ### 3.1 YouTube — yt-dlp로 접근
 
-공식 API를 쓰지 않는다(3.6절). yt-dlp(2026.08.19)가 목록·메타·자막·오디오를 모두 처리한다. **문서가 아니라 실측으로 확인한 사실**(2026-09-14, TechSpike 3절):
+공식 API를 쓰지 않는다(3.6절). yt-dlp(2026.08.19)가 목록·메타·자막·오디오를 모두 처리한다. **문서가 아니라 실측으로 확인한 사실**(2026-09-14, 실측기록 4절):
 
 | 기능 | 확인한 사실 | 절 |
 |---|---|---|
@@ -105,20 +107,20 @@
 
 ### 3.2 PO 토큰 제공자 — bgutil-ytdlp-pot-provider
 
-YouTube가 웹 클라이언트 요청에 PO 토큰을 요구하기 시작했다(yt-dlp #14307). 제공자 플러그인 2.0.0은 **pip 패키지 + Node ≥ 20 + 빌드된 `server/build/generate_once.js`(스크립트 모드)** 로 동작함을 확인했다(TechSpike 3.3절). 제공자 없이도 이날은 자막·오디오가 받아졌지만 "PO Token을 video ID에 묶는 실험 감지" 로그가 떴다 → **기본 구성으로 둔다.** HTTP 모드(`127.0.0.1:4416`)는 서버 미기동 시 경고를 반복하므로 스크립트 경로를 명시하고 HTTP 제공자를 끈다.
+YouTube가 웹 클라이언트 요청에 PO 토큰을 요구하기 시작했다(yt-dlp #14307). 제공자 플러그인 2.0.0은 **pip 패키지 + Node ≥ 20 + 빌드된 `server/build/generate_once.js`(스크립트 모드)** 로 동작함을 확인했다(실측기록 4절). 제공자 없이도 이날은 자막·오디오가 받아졌지만 "PO Token을 video ID에 묶는 실험 감지" 로그가 떴다 → **기본 구성으로 둔다.** **2026-09-16 정정**: script 모드는 요청마다 Node 를 띄워 1코어에서 15초 제한을 넘겼다(T-007). **상주 HTTP 서버**(`127.0.0.1:4416`)를 기본으로 쓰고 script 모드는 폴백으로 둔다.
 
 ### 3.3 youtube-transcript-api (폴백)
 
-비공식 엔드포인트를 쓰는 라이브러리(1.2.4). 사내 IP에서 동작(1.6초, TechSpike 3.7절). 수동/자동 구분(`is_generated`)을 준다. yt-dlp 자막 경로가 막힐 때의 **2순위**. 클라우드 IP 차단 사례가 많아 1순위로는 두지 않는다.
+비공식 엔드포인트를 쓰는 라이브러리(1.2.4). 사내 IP에서 동작(1.6초, 실측기록 4절). 수동/자동 구분(`is_generated`)을 준다. yt-dlp 자막 경로가 막힐 때의 **2순위**. 클라우드 IP 차단 사례가 많아 1순위로는 두지 않는다.
 
 ### 3.4 Hugging Face Hub (모델 다운로드)
 
-faster-whisper 모델(CTranslate2 변환본)을 최초 사용 시 내려받는다. small 464MB, large-v3-turbo 1.6GB. Windows에서 HF 캐시가 심볼릭 링크를 못 써 **공간을 더 쓴다** → 캐시 위치는 우리가 정한다(`HF_HOME`, 8절).
+faster-whisper 모델(CTranslate2 변환본)을 최초 사용 시 내려받는다(크기는 실측기록 4절). Windows에서 HF 캐시가 심볼릭 링크를 못 써 **공간을 더 쓴다** → 캐시 위치는 우리가 정한다(`HF_HOME`, 8절).
 
 ### 3.5 실측으로만 알 수 있었던 것
 
-- 번역 자막 429, 숏폼 flat `duration` 부재, `playlist_count` 부재, 롱폼 탭의 42초 영상, bgutil 빌드 필요, DASH m4a 경고와 PyAV 디코딩 성공, Whisper small 3.05x / turbo 0.86x.
-  전부 문서에 없거나 문서와 다른 것이다. **외부 서비스 동작은 Phase마다 프롬프트 작성 전에 다시 실측한다** (`CLAUDE.md` 1절 1단계).
+- 번역 자막 429, 숏폼 flat `duration` 부재, `playlist_count` 부재, flat `title` 잘림, 롱폼 탭의 짧은 영상, bgutil 빌드 필요·상주 서버 필요, DASH m4a 경고와 PyAV 디코딩 성공, CPU Whisper 의 모델별 속도 역전. **값과 실제 출력은 `docs/internal/P0_실측기록_Common.md` 4절·`검토서_Prototype`.**
+  전부 라이브러리 문서에 없거나 문서와 다른 것이다. **외부 서비스 동작은 설계서를 쓰기 전에 실측한다** (`CLAUDE.md` 1절 1단계). Phase 1~3 은 프로토타입이 이미 실측했다 — `검토서_Prototype`.
 
 ### 3.6 쓰지 않는 것 (v1)
 
@@ -178,7 +180,7 @@ UTF-8(BOM 없음), LF. JSON·DB **키는 영문 ASCII**, 값은 원문(한국어
 
 `manual(<lang>) → auto(<lang>-orig) → [폴백 라이브러리 → manual/auto] → whisper`
 
-- 1·2순위는 yt-dlp json3. 2순위의 원어 판정은 트랙 키 접미사 **`-orig`** 다(TechSpike 3.2절).
+- 1·2순위는 yt-dlp json3. 2순위의 원어 판정은 트랙 키 접미사 **`-orig`** 다(실측기록 4절).
 - yt-dlp 자막 경로가 실패(429·차단·형식 변경)하면 youtube-transcript-api로 같은 것을 다시 시도한다.
 - 모두 없으면 Whisper. Whisper 결과는 자막이 나중에 생겨도 지우지 않는다(레코드가 별개).
 
@@ -190,14 +192,16 @@ UTF-8(BOM 없음), LF. JSON·DB **키는 영문 ASCII**, 값은 원문(한국어
 
 ### 5.3 STT 전략 (CPU 전용)
 
-| 항목 | 결정 | 근거 |
+> 값(모델·스레드·VAD·beam)은 `backend/config/stt_default.json` 이 단일 출처다 — 각 키의 `_comment` 에 근거가 있다.
+> 속도·품질 실측은 `docs/internal/P0_실측기록_Common.md` 4절. 여기에는 **결정의 이유만** 적는다.
+
+| 항목 | 결정 | 왜 |
 |---|---|---|
-| 엔진 | faster-whisper (CTranslate2, int8) — `SttEngine` 뒤에 둬 whisper.cpp 등으로 교체 가능 | TechSpike 3.5·3.6절 |
-| 기본 모델 | **small** (물리 코어 1개에서 3.05x 실시간). medium·large-v3-turbo(0.86x)는 프리셋 | 보류 결정 2 — P2에서 정량 비교 후 확정 |
-| 스레드 | 논리 코어 수(개발 VM 2) | |
-| 동시성 | STT 작업 **1개**. 네트워크 작업과 큐 분리 | CPU 1개, 차단 위험 |
-| VAD | 켬(Silero 내장) — 무음 구간 제거 | |
-| 운영 방식 | 자막 있는 영상은 Whisper를 돌리지 않는다(**자막 우선**). Whisper는 큐에 쌓아 배치로 | |
+| 엔진 | faster-whisper (CTranslate2, int8) — `SttEngine` Protocol 뒤에 둬 교체 가능 | GPU 없는 환경에서 실측상 가장 빠르고, 교체 가능성을 열어 둔다 |
+| 기본 모델 | 설정 파일의 `model`. 큰 모델은 `presets` 로 사용자 선택 | 이 급 CPU 에서는 작은 모델이 실시간보다 빠르고 큰 모델은 느리다. 확정은 보류 결정 2(P2 정량 비교) |
+| 동시성 | STT 작업 **1개**, 네트워크 작업과 큐 분리 | 물리 코어 1개 — 동시 실행이 서로를 느리게 만든다 |
+| VAD | 켬(Silero 내장) | 무음 구간을 건너뛰어 속도·환각을 함께 개선 |
+| 운영 방식 | 자막 있는 영상은 Whisper 를 돌리지 않는다(**자막 우선**). Whisper 는 큐에 쌓아 배치로 | CPU 시간이 가장 비싼 자원이다 |
 
 ### 5.4 차단·레이트리밋 대응 원칙
 
@@ -228,30 +232,32 @@ Python·ffmpeg·Node가 없는 **깨끗한 Windows PC**에서 설치파일 하�
 
 | Phase | 명칭 | 핵심 산출물 | 브랜치 | 상태 |
 |---|---|---|---|---|
-| 0 | 범위 정의 + 공통 모듈 | 상위 문서 3종, 템플릿, 에이전트/스킬, 공통 모듈(config·constants·domain·exceptions·logging·run_context·db·analysis 슬롯)+테스트, 프론트 스캐폴드, check_env·verify_docs | `impl-phase0` | 🔄 진행 중 |
+| 0 | 범위 정의 + 공통 모듈 | 상위 문서 3종, 템플릿, 공통 모듈(config·constants·domain·exceptions·logging·run_context·db·analysis 슬롯)+테스트, 프론트 스캐폴드, check_env·verify_docs | `impl-phase0` | ✅ 완료 (`main` 병합 `6480b0b`) |
 | 1 | 채널·영상 목록 | 채널 해석, 탭 리스팅, 증분 동기화, 메타 보충, DB 스키마(channels·videos·analyses), API·CLI | `impl-phase1` | 예정 |
 | 2 | 스크립트 파이프라인 | Provider 체인, json3 파싱, 오디오→Whisper, Huey 큐·재시도·재개, 벤치마크 | `impl-phase2` | 예정 |
 | 3 | 웹 UI | React 화면 일체 — 목록·뷰어(**원클릭 복사**)·**'요약 및 정리' 수동 입력·저장(API 포함)**·작업·설정, 자동 분석 자리 | `impl-phase3` | 예정 |
 | 4 | 빌드·배포 | PyInstaller 사이드카, Tauri 데스크톱, 설치파일, 모델 최초 다운로드 | `impl-phase4` | 예정 |
-| 5 | 분석 플러그인 | 분석기 구현·UI 렌더 | `impl-phase5` | 예정 (P6과 순서 — 보류 결정 5) |
+| 5 | 분석 플러그인 | **자동** 분석기 구현·UI 렌더 | `impl-phase5` | 예정 (P6과 순서 — 보류 결정 5) |
 | 6 | 모바일 | Capacitor Android, 서버 URL 설정 | `impl-phase6` | 예정 |
+
+**Phase 1~3 은 프로토타입을 정식 구조로 이관한다** (사용자 결정 2026-09-16). `prototype/e2e-slice` 가 전 경로를 실측했으므로 같은 기술 검증을 되풀이하지 않고, 정식 모듈 경계·테스트·설계 판단을 갖춰 옮긴다. 근거: `docs/internal/검토서_Prototype.md`.
 
 ## 8. 실행 환경
 
-### 8.1 개발 VM (실측 2026-09-14, TechSpike 3.8절)
+### 8.1 개발 VM — 설계에 미치는 것
 
-| 항목 | 값 | 설계에 미치는 것 |
-|---|---|---|
-| OS | Windows Server 2022 (10.0.20348) | PowerShell 스크립트, `.venv\Scripts\` 경로 |
-| CPU | Intel Xeon (Icelake) **물리 1 / 논리 2** | STT 워커 1개, `cpu_threads=2`, 기본 모델 small |
-| RAM | 16GB | Whisper small/turbo 모두 여유 |
-| GPU | 없음 | CPU 전용 int8 |
-| 디스크 | **C: 4.78GB / D: 3.90GB 여유** (2026-09-14 — turbo 캐시 삭제, small 캐시·bgutil 도구·pip/npm 캐시를 D: 로 모으고 C: 캐시를 지운 뒤) | 모델 캐시 `HF_HOME`을 지정, 대형 모델 동시 보유 불가, **P4 전 디스크 확보 필수**(보류 결정 8) |
-| 디스크 정책 | **D: 우선**(사용자 규칙 2026-09-14) — 저장소·venv·데이터·모델·도구(`tools/`)·pip/npm 캐시 모두 D:, C: 는 OS 전용. 부족하면 **D: 증설**(사용자 결정 2026-09-14) | 새 도구 도입 시 저장 위치를 먼저 D: 로 지정 (`CLAUDE.md` 7절) |
-| Python | 3.14.3(기본) / **3.12.10(프로젝트)** | `py -3.12 -m venv backend\.venv` |
-| Node | v24.14.0 | yt-dlp JS 런타임, bgutil 스크립트, 프론트 빌드 |
-| 없음 | ffmpeg, Rust/cargo, gh CLI | ffmpeg 불필요 확인; Rust는 P4에서 설치(≈2GB) |
-| 네트워크 | 사내 고정 IP(SamsungSDS), 프록시 없음 | YouTube·HF·PyPI 직접 접속. 차단 시 가정용 회선에서 재확인 |
+> **실측값(OS·CPU·RAM·디스크·버전·네트워크)은 `docs/internal/P0_실측기록_Common.md` 1절이 단일 출처다.**
+> 여기에는 그 사실이 설계를 어떻게 바꾸는지만 적는다.
+
+| 환경 사실 | 설계에 미치는 것 |
+|---|---|
+| Windows 서버 | PowerShell 스크립트(UTF-8 BOM — T-005), venv 전체 경로 표기 |
+| **물리 코어 1개**, GPU 없음 | STT 워커 1개·CPU 전용 int8·작은 모델 기본. **요청마다 외부 프로세스를 띄우는 설계 금지**(T-007) |
+| 디스크 여유가 모델 하나 수준 | 모델 캐시 위치를 `HF_HOME` 으로 지정, 대형 모델 동시 보유 불가, **P4 전 확보 필수**(보류 결정 8) |
+| **D: 우선** 디스크 정책(사용자 규칙) | 저장소·venv·데이터·모델·도구·캐시를 D: 에. 새 도구는 저장 위치를 먼저 지정 (`CLAUDE.md` 7절) |
+| Python 3.12 고정(시스템은 3.14) | 문서의 명령은 venv 전체 경로로 쓴다. 3.14 전환은 보류 결정 4 |
+| ffmpeg·Rust 없음 | ffmpeg 를 요구하는 옵션을 쓰지 않는다. Rust 는 P4 에서 설치 |
+| 사내 고정 IP, 프록시 없음 | 차단이 나오면 회선을 먼저 의심한다 (`CLAUDE.md` 8절) |
 
 ### 8.2 목표 사용자 환경
 
@@ -303,3 +309,4 @@ Python·ffmpeg·Node가 없는 **깨끗한 Windows PC**에서 설치파일 하�
 |---|---|---|
 | v1 | 2026-09-14 | 초판 — 기획서(승인)와 TechSpike 실측 반영 |
 | v2 | 2026-09-14 | Direct 리뷰 — 디스크 D: 우선·증설, v1 수동 요약 흐름(원클릭 복사·붙여넣기 저장) 추가 |
+| v3 | 2026-09-16 | 방법론 v2 — 문서 3개 체계·단일 출처, P1~P3 프로토타입 이관, PO 토큰 상주 서버 |

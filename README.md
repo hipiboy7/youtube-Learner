@@ -6,7 +6,8 @@
 - **무엇을/왜**: [`docs/scope-definition.md`](docs/scope-definition.md)
 - **어떻게**: [`docs/설계서_Architecture.md`](docs/설계서_Architecture.md)
 - **작업 규칙**: [`CLAUDE.md`](CLAUDE.md)
-- **기획서(승인 2026-09-14)**: [`docs/prompts/phase0/project-plan-v1.md`](docs/prompts/phase0/project-plan-v1.md)
+- **문제가 생겼을 때(사용자용)**: [`docs/internal/학습가이드_문제해결.md`](docs/internal/학습가이드_문제해결.md)
+- **초기 요구·결정 원문**: [`docs/internal/qa/P0_질의응답_초기요구.md`](docs/internal/qa/P0_질의응답_초기요구.md)
 
 ---
 
@@ -85,7 +86,7 @@ backend\.venv\Scripts\python.exe scripts\verify_docs.py
 
 | Phase | 명칭 | 상태 |
 |---|---|---|
-| 0 | 범위 정의 + 공통 모듈 | 🔄 Direct 리뷰 중 — 1차 지시 3건(D: 우선·증설·수동 요약 흐름) 반영 완료, 병합 대기 (`impl-phase0`) |
+| 0 | 범위 정의 + 공통 모듈 | ✅ 완료 (`main` 병합 `6480b0b`) |
 | 1 | 채널·영상 목록 | 예정 |
 | 2 | 스크립트 파이프라인 | 예정 |
 | 3 | 웹 UI | 예정 |
@@ -109,9 +110,8 @@ backend/tests/{unit,integration,e2e}/   등급 A / 등급 B / 실호출(-m e2e)
 backend/config/                실행마다 조절하는 값 (stt·ytdlp·sync, 각 _comment)
 frontend/                      React + Vite + TS (Vitest) — 화면은 P3
 scripts/                       check_env.ps1 · verify_docs.py · spike/(등급 C 실측)
-docs/                          산출물 (scope-definition · 설계서_Architecture · P{N}_요구사항정의서/설계서/테스트결과서)
-docs/internal/                 내부 자료 (TechSpike · SelfReview · 학습가이드 · 용어집 · 트러블슈팅 · templates/)
-docs/prompts/phase{N}/         작업 프롬프트·기획서 (요구사항 기록)
+docs/                          산출물 (scope-definition · 설계서_Architecture · P{N}_설계서)
+docs/internal/                 내부 자료 (실측기록 · 학습가이드 · 용어집 · 트러블슈팅 · 문제해결 · qa/ · templates/)
 history/                       세션별 작업 기록
 tools/                         외부 도구 — bgutil PO 토큰 서버 (git 미추적, D: 우선 규칙)
 data/ status/                  런타임 (git 미추적)
